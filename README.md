@@ -6,4 +6,4 @@ See the Khronos Group OpenML web site, https://www.khronos.org/openml/, for more
 
 This repository was created to provide access to legacy software that is no longer available from the original Sourceforge project site (see https://sourceforge.net/projects/oml-ri/) because it used the obsolete CVS source control versioning system.
 
-Currently there is no plan to update this project so that it will build for the Linux and Windows platforms. But that decision may change in the future; contributors are welcome to provide an updated build (i.e. CMake?).
+Currently there is no plan to update this project so that it will build for the Linux and Windows platforms. But that decision may change in the future; contributors are welcome to provide an updated, cross-platform build environment (i.e. CMake?).
