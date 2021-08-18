@@ -1,0 +1,100 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlDIid 3dm
+.SH NAME
+mlDIid: mlDIextractIdType, mlDIextractJackIndex, mlDIextractPathIndex, mlDIextractXcodeEngineIndex, mlDIextractXcodePipeIndex, mlDImakeJackId, mlDImakePathId, mlDImakeXcodeEngineId, mlDImakeXcodePipeId, mlDIparentIdOfDeviceId, mlDIparentIdOfLogDevId, mlDIisOpenId, mlDIconvertOpenIdToStaticId\- id functions used by device-dependent ML modules.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml_didd.h>\f1
+.sp .8v
+\f3
+MLint32 MLAPI mlDIextractIdType(MLint64 id);
+
+MLint32 MLAPI mlDIextractJackIndex(MLint64 id);
+
+MLint32 MLAPI mlDIextractPathIndex(MLint64 id);
+
+MLint32 MLAPI mlDIextractXcodeEngineIndex(MLint64 id);
+
+MLint32 MLAPI mlDIextractXcodePipeIndex(MLint64 id);
+
+MLint64 MLAPI mlDImakeJackId(MLint64 deviceId, MLint32 jackIndex);
+
+MLint64 MLAPI mlDImakePathId(MLint64 deviceId, MLint32 pathIndex);
+
+MLint64 MLAPI mlDImakeXcodeEngineId(MLint64 deviceId, MLint32 xcodeEngineIndx);
+
+MLint64 MLAPI mlDImakeXcodePipeId(MLint64 xcodeEngineId, MLint32 pipeIndex);
+
+MLint64 MLAPI mlDIparentIdOfDeviceId(MLint64 deviceId);
+
+MLint64 MLAPI mlDIparentIdOfLogDevId(MLint64 logDevId);
+
+MLint32 MLAPI mlDIisOpenId(MLint64 candidateId);
+
+MLint64 MLAPI mlDIconvertOpenIdToStaticId(MLopenid openId);
+
+\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2id\f1
+A 64-bit ML id number.
+.TP
+\f2deviceId\f1
+A 64-bit ML static id number for a ML device.
+.TP
+\f2logDevId\f1
+A 64-bit ML static id number for a ML logical device.
+.TP
+\f2xcodeEngineId\f1
+A 64-bit ML static id number for a ML transcoder.
+.TP
+\f2jackIndex\f1
+An integer module-dependent static jack index.
+.TP
+\f2pathIndex\f1
+An integer module-dependent static path index.
+.TP
+\f2xcodeEngineIndex\f1
+An integer module-dependent static transcoder index.
+.TP
+\f2pipeIndex\f1
+An integer module-dependent static transcode pipe index.
+.TP
+\f2candidateId\f1
+A 64-bit ML id number (from either a previous call to getCapabilities,
+or a call to mlOpen)
+.TP
+\f2openId\f1
+A 64-bit ML open id number (from a previous call to mlOpen)
+.P
+
+.SH DESCRIPTION
+
+These routines should be called from within a device-dependent
+module's device-dependent routines.  (Pointers to those routines
+were passed to the DI layer by the module's \f3ddConnect\f1(3dm) 
+routine.)
+
+Use these routines to manipulate ML id numbers in your module.
+
+The make calls are useful for constructing id numbers when needed
+in the ddGetCapabilities call - they convert your module-dependent
+indexes into system-wide id numbers.
+
+The extract calls are useful for interpreting id numbers passed
+to your device - they turn system-wide id numbers back into
+module-dependent indexes.
+
+In addition there are calls to find the static id of parent
+devices, to distinguish open and static ids, and to convert
+between open and static ids.
+
+.SH SEE ALSO
+mlDIIntro(3dm),
+ddInterrogate(3dm).
+ddConnect(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,21 @@
+
+This directory contains example ML SDK programs for video devices.
+
+vidtogfx takes video in from a v4l card and displays it using
+         graphics.  Note that the video buffer is read into
+         regular system memory and then drawn to graphics using
+         the standard glDrawPixels function.
+	 (Not available on Windows)
+
+vidtomem takes video in from a card into memory and optionally
+	 stores the frames into a file.
+
+memtovid takes frames from a file into memory and sends it to
+	 the video output device for display.
+
+
+
+
+
+
+

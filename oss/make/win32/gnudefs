@@ -1,0 +1,116 @@
+#
+# Settings for the GNU compiler suite
+#
+
+#
+# Assembler
+#
+AS		= $(TOOLROOT)/usr/bin/as
+
+#
+# Compiler
+#
+CC		= $(TOOLROOT)/usr/bin/gcc
+CPP		= $(CC) -E
+CXX		= $(TOOLROOT)/usr/bin/g++
+
+OBJ_SUFFIX=o
+
+# DASH_D is the command-line option to define a macro
+# With most normal compilers, this is '-D'
+DASH_D          = -D
+
+# Command-line option to request that debugging information be
+# generated
+GEN_DEBUG_INFO  = -g
+
+CC_WARN_LEVEL	= -Wall
+
+ifneq ($(OPENML_DEBUG),0)
+CC_OPTIMIZER	= -O0
+else
+CC_OPTIMIZER	= -O2
+endif
+
+CC_DEPOPTS	= -MD
+
+GCDEFS	= -DCOMPILER_GCC -mno-cygwin
+
+# INC_DASH_I is the command-line option to specify include paths
+# On normal platforms, this is "-I"
+INC_DASH_I = -I
+
+CC_INCDIR	= $(LROOT)/usr/include
+ifdef ROOT
+GCINCS	= -nostdinc -I$(CC_INCDIR)
+else
+GCINCS	= -I$(CC_INCDIR)
+endif
+
+GCXXDEFS	= -DCOMPILER_GCC -mno-cygwin
+
+ifdef ROOT
+GCXXINCS	= -nostdinc -I$(CC_INCDIR) -I$(CC_INCDIR)/g++
+else
+GCXXINCS	= -I$(CC_INCDIR) -I$(CC_INCDIR)/g++
+endif
+
+# For platform-independence, include paths specified in other parts of
+# the makefile system (eg: in the GNUmakefile) are not prefixed by -I,
+# so add the -I now
+CINCS	= $(GCINCS) $(foreach path, $(ICINCS) $(LCINCS) $(VCINCS), -I$(path))
+CXXINCS	= $(GCXXINCS) \
+	$(foreach path, $(VCXXINCS) $(LCXXINCS) $(ICXXINCS), -I$(path))
+
+#
+# Linker
+#
+LD		= $(TOOLROOT)/usr/bin/ld
+
+ifdef ROOT
+GLDOPTS	= -nostdlib -L$(ROOT)/lib -L$(ROOT)/usr/lib
+else
+##GLDOPTS	= -L/lib -L/usr/lib
+GLDOPTS	= 
+endif
+GLDLIBS	=
+
+LDOBJS	= $(VLDOBJS) $(LLDOBJS) $(ILDOBJS) $(GLDOBJS)
+
+XSORTED_LIBPATHS = $(sort \
+	$(VLDLIBPATHS) $(LLDLIBPATHS) $(ILDLIBPATHS) $(GLDLIBPATHS))
+
+LDLIBPATHS = $(foreach path, $(XSORTED_LIBPATHS), -L$(path))
+
+# Libs are specified in a compiler-independent way, which is just the
+# base name of the lib. For GNU, a lib specified by "-lXXX" will only
+# match "libXXX.a" or "XXX.dll". The first is atypical of Windows libs,
+# and the second typically does not contain exported symbols. In general,
+# we wish to match "XXX.lib".
+# The perl script here will check each lib, and will issue "-lXXX" if
+# the "libXXX.a" lib is found, otherwise it will attempt to construct
+# a full pathname to an object named "XXX.lib".
+LDLIBS = $(shell $(BOOT_ROOT)/fix_gnu_linklibs.pl -path $(XSORTED_LIBPATHS) -lib $(VLDLIBS) $(LLDLIBS) $(ILDLIBS) $(GLDLIBS))
+
+# Exporting --
+# Makefile must define NT_DEF_FILE as the ".def" file specifying the
+# symbols to be exported.
+
+# This file must be processed, because it contains non-mangled symbol
+# names -- but gcc actually expects mangled names. The names will
+# be mangled if the symbols refer to __stdcall functions, in which case
+# the "real" symbol is function@stack-size.
+#
+# The rule for generating our own def file is in gnurules
+
+DSO_COPTS =
+DSO_LDOPTS = -shared -Wl,--disable-stdcall-fixup -Wl,-soname,$(SONAME) -Wl,--out-implib,$(DSO_IMPLIB) -Wl,--strip-all $(NT_MANGLED_DEF_FILE)
+
+# LD_DASH_O is the command-line option to name the output of the link
+# On normal platforms, this is "-o " (with a trailing space). But to 
+# allow for MSVC, we need the usage to be:
+#  $(LD_DASH_O)$(OUTPUT_NAME)
+# ie: the space must be built-in to the LD_DASH_O variable.
+EOF =
+LD_DASH_O := -o $(EOF)
+

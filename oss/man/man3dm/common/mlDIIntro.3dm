@@ -1,0 +1,129 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlDIIntro 3dm
+.SH NAME
+mlDIIntro \- introduction to ML di/dd interface.
+.SH DISCUSSION
+
+This man page provides an introduction to the interface between the
+device independent (DI) and device dependent (DD) portions of
+the ML.  This is intended for use by developers of ML
+modules to support new hardware.  These functions are not intended
+for use by application developers (see \f3mlIntro\f1(3dm) for
+an introduction to the application programming interface).
+
+.SH FUNCTIONS EXPECTED BY THE DI/DD INTERFACE
+
+The ML device-independent layer will interact with your
+device-dependent module by using three functional entry points.  These
+functions must be provided by all ML modules:
+
+  \f3ddInterrogate\f1(3dm)
+  \f3ddConnect\f1(3dm)
+  \f3ddDisconnect\f1(3dm)
+
+\f3ddInterrogate\f1(3dm) is called at initialization time for each
+device-independent module.  It is an appropriate time for your module
+to interrogate the hardware and expose capabilities to the di layer.
+
+\f3ddConnect\f1(3dm) is called the first time each process
+wishes to interact with a device advertised by your module.
+In that function, you must construct and return a function pointer 
+table.  The ML device-independent layer will use that table to 
+map device-independent API calls into your module's device-dependent
+functions.
+
+\f3ddDisconnect\f1(3dm) is called at exit time for each process
+which called \f3ddConnect\f1(3dm).
+
+.SH FUNCTIONS PROVIDED BY THE DI/DD INTERFACE
+
+These functions are provided by the ML for use within your module.
+
+.SH New Physical Device
+
+Your device-dependent module must use this function
+to advise the di layer of supported physical devices.  This should
+be done inside your module's \f3ddInterrogate\f1 routine. (That
+routine is called at initialization time by the DI layer).  It
+should be called once for each physical device you wish to expose.
+(If two copies of the same device are installed, you must
+call this routine twice.)
+
+  \f3mlDINewPhysicalDevice\f1(3dm)
+
+.SH Utility functions
+
+These utility functions provide a means to manipulate and interpret
+the id numbers which the ML system uses as tokens to uniquely
+identify system objects.  Each token should be considered opaque
+and module should make use of these functions to create or decompose
+them.
+
+  \f3mlDIextractIdType\f1(3dm)
+  \f3mlDIextractJackIndex\f1(3dm)
+  \f3mlDIextractPathIndex\f1(3dm)
+  \f3mlDIextractXcodeEngineIndex\f1(3dm)
+  \f3mlDIextractXcodePipeIndex\f1(3dm)
+
+  \f3mlDImakeJackId\f1(3dm)
+  \f3mlDImakePathId\f1(3dm)
+  \f3mlDImakeXcodeEngineId\f1(3dm)
+  \f3mlDImakeXcodePipeId\f1(3dm)
+
+  \f3mlDIparentIdOfDeviceId\f1(3dm)
+  \f3mlDIparentIdOfLogDevId\f1(3dm)
+
+  \f3mlDIisOpenId\f1(3dm)
+  \f3mlDIparseOpenOptions\f1(3dm)
+  \f3mlDIconvertOpenIdToStaticId\f1(3dm)
+
+.SH Queue Functions
+
+These queue functions are used to create, and interact with, the queue
+between the application and your device.  These are user-level
+functions, but equivalent functionality may also be available via
+kernel-level calls in some implementations.
+
+  \f3mlDIQueueCreate\f1(3dm)
+  \f3mlDIQueueDestroy\f1(3dm)
+  \f3mlDIQueuePushMessage\f1(3dm)
+  \f3mlDIQueueSendDeviceEvent\f1(3dm)
+  \f3mlDIQueueNextMessage\f1(3dm)
+  \f3mlDIQueueUpdateMessage\f1(3dm)
+  \f3mlDIQueueAdvanceMessages\f1(3dm)
+  \f3mlDIQueueAbortMessages\f1(3dm)
+  \f3mlDIQueueReturnEvent\f1(3dm)
+  \f3mlDIQueueReceiveMessage\f1(3dm)
+  \f3mlDIQueueGetSendCount\f1(3dm)
+  \f3mlDIQueueGetReceiveCount\f1(3dm)
+  \f3mlDIQueueGetReplyCount\f1(3dm)
+  \f3mlDIQueueGetEventCount\f1(3dm)
+  \f3mlDIQueueGetSendWaitable\f1(3dm)
+  \f3mlDIQueueGetReceiveWaitable\f1(3dm)
+  \f3mlDIQueueGetDeviceWaitable\f1(3dm)
+
+.SH Message Functions
+
+These routines are useful for interacting with messages
+on the queues between the application and your device.
+Unlike the previous functions, these routines are useful
+outside the di/dd interface.  Hence they are part of the 
+public ML API.
+
+  \f3mlPvFind\f1(3dm)
+  \f3mlPvSizes\f1(3dm)
+  \f3mlPvCopy\f1(3dm)
+
+.SH SEE ALSO
+mlIntro(3dm),
+ddInterrogate(3dm),
+ddConnect(3dm),
+mlDINew(3dm),
+mlDIQueue(3dm),
+mlPvSizes(3dm),
+mlPvFind(3dm),
+mlPvCopy(3dm)
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

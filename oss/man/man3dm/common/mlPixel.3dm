@@ -1,0 +1,736 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlPixel 3dm
+.SH NAME
+mlPixel \- describes in-memory pixel formats for ML
+.SH OVERVIEW
+Passing image buffers to/from ML devices will require the device to
+interpret bits in memory as pixels.
+This mapping, from bits to/from
+pixels is described by the ML parameters:
+\f4ML_IMAGE_COLORSPACE\f1, \f4ML_IMAGE_PACKING\f1,
+\f4ML_IMAGE_SAMPLING\f1 and \f4ML_IMAGE_SWAP_BYTES\f1.
+This man page describes in detail how those parameters are interpreted
+and gives examples of the resulting in-memory pixel formats.
+
+.SH INTRODUCTION
+
+The way ML maps memory bits into colored pixels is uniquely
+determined by the colorspace, packing and sampling and swap-bytes
+parameters.
+The colorspace describes what each component represents,
+the packing describes how the components are laid-out in memory, and
+the sampling describes how often each component is stored.
+
+.SH PACKING
+
+The packing is defined: ML_PACKING_\f2type\f1_\f2size\f1_\f2order\f1.
+
+.TP
+\f2type\f1
+is the base type of each component.
+Leave blank for an unsigned integer, use S for a signed integer.(In the future we may also support R for real numbers.)
+
+.TP
+\f2size\f1
+defines the number of bits per component.
+The size may refer to
+simple, padded or complex packings.
+
+
+.TP
+Simple formats
+In this case every component is the same size and there is no additional
+space between components.
+Here, a single numeric value specifies the number
+of bits per component.
+The first component consumes the first
+\f2size\f1 bits, the next consumes the next \f2size\f1 bits, and so on.
+Within each component, the most significant bits always precede the least-significant
+bits.
+For example, a \f2size\f1 of 12 means that the first byte in memory
+has the most significant 8 bits of the first component, the second byte
+holds the remainder of the first component and the most significant 4 bits
+of the second component, and so on.
+Space is only allocated for components
+which are in use (that depends on the sampling mode, see later).
+For these
+formats the data must always be interpreted as a sequence of bytes.
+
+.TP
+Padded formats
+For padded formats, each component is padded and may be treated as a short
+integer.
+When this occurs, the \f2size\f1 takes the form:
+\f2bits\f1\f4in\f1\f2space\f1[\f4L\f1|\f4R\f1]
+where \f2bits\f1 is the number of bits of information per component, \f2space\f1
+is the total size of each component and \f4L\f1 or \f4R\f1 indicates whether the information
+is left or right-shifted in that space.
+In this case, each component in use consumes
+\f2space\f1 bits and those bits must be interpreted as a short integer.
+(Unused components consume no space).
+For example, here are some common packings (note that the signed-ness of the component
+values does matter):
+
+.TS
+l l.
+	\f415  short int  0\f1
+\f3Packing\f1	\f4+--------------+\f1
+\f412in16R\f1	\f40000iiiiiiiiiiii\f1
+\f4S12in16R\f1	\f4ssssiiiiiiiiiiii\f1
+\f412in16L\f1	\f4iiiiiiiiiiiipppp\f1
+\f4S12in16L\f1	\f4iiiiiiiiiiiipppp\f1
+.TE
+.DT
+
+Where \f4s\f1 indicates sign-extension, \f4i\f1 indicates the actual
+component information, and \f4p\f1 indicates padding (replicated from
+the most-significant bits of information).
+Note that the bit locations
+refer to the locations when the 16-bit component has been loaded into
+a register as a 16-bit integer quantity.
+
+.TP
+Complex formats
+For complex packings, the size of every component is specified explicitly
+and the entire pixel must be treated as a single integer.
+The \f2size\f1
+takes the form: \f2size1\f1_\f2size2\f1_\f2size3\f1_\f2size4\f1, where
+\f2size1\f1 is the size of component 1, \f2size2\f1 is the size of component
+2, and so on.
+In this case, the entire pixel is a single integer of length
+equal to the sum of the component sizes.
+Any space allocated to unused components must be zero-filled.
+The most common complex packing occurs when
+4 components are packed within a 4-byte integer.
+For example, ML_PACKING_10_10_10_2 is:
+
+.TS
+l l.
+	\f431             int             0\f1
+\f3Packing\f1	\f4+------------------------------+\f1
+\f410_10_10_2\f1	\f411111111112222222222333333333344\f1
+.TE
+.DT
+
+Where \f41\f1 is the first component, \f42\f1 is the second component,
+and so on.
+Note that the bit locations refer to the locations when
+this 32-bit pixel is loaded into a register as a 32-bit integer quantity.
+If only three components were in use (determined from the sampling) then
+the space for the fourth component would be zero-filled.
+.RE
+
+.TP
+\f2order\f1
+
+is the order of the components in memory, leave blank for natural
+ordering (1,2,3,4), use \f4R\f1 for reversed ordering (4,3,2,1), for
+all other orderings, specify the component order explicitly.For
+example \f44123\f1 indicates that the fourth component is stored first in
+memory followed by the remaining three components.For example, here we
+compare a normal and reversed packing:
+
+.TS
+l l.
+	\f431             int             0\f1
+\f3Packing\f1	\f4+------------------------------+\f1
+\f410_10_10_2\f1	\f411111111112222222222333333333344\f1
+\f410_10_10_2_R\f1	\f444333333333322222222221111111111\f1
+.TE
+.DT
+
+Where \f41\f1 is the first component, \f42\f1 is the second component,
+and so on.
+Note that since this is a complex packing, the bit
+locations refer to the locations when this entire pixel is loaded into
+a register as a single integer.
+
+.SH COLORSPACE
+
+The colorspace parameters describe how to interpret each component.The
+full colorspace parameter is:
+\f4ML_COLORSPACE\f1_\f2representation\f1_\f2standard\f1_\f2range\f1.
+
+.TP
+\f2representation\f1
+is either \f4ML_REPRESENTATION_RGB\f1 or \f4ML_REPRESENTATION_CbYCr\f1.
+
+This controls how to interpret each component.
+The following table
+shows this mapping (assuming for now that every component is sampled
+once per pixel):
+
+.TS
+;
+r c c c c .
+\f3Colorspace\f1					
+\f3Representation	Comp 1	Comp 2	Comp 3	Comp 4\f1
+_
+\f3RGB\f1	Red	Green	Blue	Alpha
+\f3CbYCr\f1	Cb	Y	Cr	Alpha
+.TE
+.DT
+
+Remember, the packing dictates the size and order of the components in
+memory, while the colorspace describes what each component represents.
+For example, here we show the effect of colorspace and packing
+combined (again assuming a 4444 sampling, see later).
+
+.TS
+;
+l l l.
+\f3Color\f1		\f431             int             0\f1
+\f3Standard\f1	\f3Packing\f1	\f4+------------------------------+\f1
+\f4RGB\f1	\f410_10_10_2\f1	\f4RRRRRRRRRRGGGGGGGGGGBBBBBBBBBBAA\f1
+\f4RGB\f1	\f410_10_10_2_R\f1	\f4AABBBBBBBBBBGGGGGGGGGGRRRRRRRRRR\f1
+\f4CbYCr\f1	\f410_10_10_2\f1	\f4bbbbbbbbbbYYYYYYYYYYrrrrrrrrrrAA\f1
+.TE
+.DT
+
+.TP
+\f2standard\f1
+indicates how to interpret particular values as actual
+colors, the most common standard is known as "Rec 709" and is \f4ML_STANDARD_709\f1.
+Choosing
+a different standard will alter the way the system converts between different
+color representations.
+There are a number of alternatives but the current
+recommended international standard is Rec 709.
+
+.TP
+\f2range\f1
+is either \f4ML_RANGE_FULL\f1 (the smallest and largest values are
+limited only by the available packing size) or \f4ML_RANGE_HEAD\f1 (the smallest
+and largest values are somewhat less than the theoretical min/max values
+to allow some "headroom").
+Full range is common in computer graphics.
+Headroom
+range is common in video, particularly when sending video signals over
+a wire (for example, values outside the legal component range may be used
+to mark the beginning or end of a video frame).
+.PP
+When constructing a colorspace, you must specify a representation, a standard
+and a range.
+For example, \f4ML_COLORSPACE_RGB_709_FULL\f1 has a representation
+of RGB, a standard of 709 and uses full-range data.It is shorthand for
+(\f4ML_REPRESENTATION_RGB\f1 + \f4ML_STANDARD_709\f1 + \f4ML_RANGE_FULL\f1).
+
+.SH SAMPLING
+
+The sampling parameters take their names from common terminology in
+the video industry.
+They describe how often each component is sampled
+for each pixel.In computer graphics, its normal for every component to
+be sampled once per pixel, but in video that need not be the case.
+
+For all RGB colorspaces, the only legal samplings are:
+.RS
+.TP
+\f4ML_SAMPLING_444\f1
+indicates that the R,G and B components are each sampled
+once per pixel and only the first 3 channels are used.
+If a packing
+provides space for a 4th channel then those bits should have
+value 0.
+.TP
+\f4ML_SAMPLING_4444\f1
+indicates that the R,G,B and A components are sampled
+once per pixel.
+.RE
+.P
+For all CbYCr colorspaces, the legal samplings include:
+.RS
+.TP
+\f4ML_SAMPLING_444\f1
+which indicates that Cb, Y, and Cr are each sampled once
+per pixel and only the first 3 channels are used.
+If a packing
+provides space for a 4th channel then those bits should have
+value 0.
+.TP
+\f4ML_SAMPLING_4444\f1
+which indicates that Cb, Y, Cr and Alpha are each sampled
+once per pixel.
+.TP
+\f4ML_SAMPLING_422\f1
+which indicates that Y is sampled once per pixel and Cb/Cr
+are sampled once per pair of pixels.
+In this case Cb and Cr are interleaved on component 1 
+(Cb is first, Cr is second) and the Y occupies component 2.
+The remaining components are not used and, if a packing provides
+space for them, then those bits should have value 0.
+.TP
+\f4ML_SAMPLING_4224\f1
+which indicates that Y and Alpha are sampled once per pixel and Cb/Cr
+are sampled once per pair of pixels.
+In this case Cb and Cr are interleaved on component 1
+(Cb is first, Cr is second), Y is on component 2, component 3 contains
+the alpha channel and component 4 is not used (and will have value 0
+if space is allocated for it in the packing).
+.TP
+\f4ML_SAMPLING_400\f1
+which indicates that only Y is sampled per pixel (a greyscale
+image).
+Here Y is stored on component 1, all other components are
+unused.
+.RE
+
+Here is a table, showing the combined effect of sampling and
+colorspace on the component definitions:
+.TS
+;
+l c c c c c .
+	\f3Colorspace\f1					
+\f3Sampling\f1	\f3Representation\f1	Comp 1	Comp 2	Comp 3	Comp 4\f1
+_
+\f34444\f1	\f3RGB\f1	Red	Green	Blue	Alpha
+\f3444\f1	\f3RGB\f1	Red	Green	Blue	0
+\f34444\f1	\f3CbYCr\f1	Cb	Y	Cr	Alpha
+\f3444\f1	\f3CbYCr\f1	Cb	Y	Cr	0
+\f34224\f1	\f3CbYCr\f1	Cb/Cr	Y	Alpha	0
+\f3422\f1	\f3CbYCr\f1	Cb/Cr	Y	0	0
+\f3400\f1	\f3CbYCr\f1	Y	0	0	0
+.TE
+.DT
+
+Where '0' indicates the component is not used.
+.P
+
+.SH SWAP_BYTES
+
+The additional parameter, \f4ML_IMAGE_SWAP_BYTES\f1 may be available
+on some devices.
+When set to 0 (the default) this has no effect.
+When set to 1, the device will re-order bytes as a first step when
+reading data from memory, and as a final step when writing data to
+memory.
+The exact reordering depends on the packing element size.
+
+For simple and padded packing formats (see packings, above) the
+element size is the size of each component.
+For complex packing
+formats, the element size is the sum of the four component sizes.
+
+.ne 9
+The swap-bytes parameter causes the following re-ordering:
+
+.TS
+;
+l l l.
+\f3Element Size\f1	\f3Default ordering\f1	\f3Modified ordering\f1
+_
+\f316 bit\f1	[15..0]	[7..0][15..8]
+\f332 bit\f1	[31..0]	[7..0][15..8][23..16][31..24]
+other	[n..0]	[n..0] (no change).
+.TE
+.DT
+
+
+.SH EXAMPLES
+
+The following are some examples of the more common in-memory
+pixel formats, along with the corresponding ML parameters.
+
+.ne 15
+.SH GREYSCALE EXAMPLES
+
+.ne 10
+.TP
+8-bit greyscale (1 byte per pixel)
+
+.TS
+;
+l.
+\f4 byte 0 \f1
+\f47      0\f1
+\f4+------+\f1
+\f4YYYYYYYY\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_400\f1
+.fi
+
+.ne 10
+.TP
+padded 12-bit greyscale (1 short per pixel)
+
+.TS
+;
+l.
+\f4    short 0     \f1
+\f415             0\f1
+\f4+--------------+\f1
+\f4ssssYYYYYYYYYYYY\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_S12in16R\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_400\f1
+.fi
+
+.ne 15
+.SH RGB EXAMPLES
+
+.ne 10
+.TP
+8-bit RGB (3 bytes per pixel)
+
+.TS
+;
+l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4RRRRRRRR\f1	\f4GGGGGGGG\f1	\f4BBBBBBBB\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+8-bit BGR (3 bytes per pixel)
+
+.TS
+;
+l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4BBBBBBBB\f1	\f4GGGGGGGG\f1	\f4RRRRRRRR\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8_R\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+8-bit RGBA (4 bytes per pixel)
+
+.TS
+;
+l l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1	\f4 byte 3 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4RRRRRRRR\f1	\f4GGGGGGGG\f1	\f4BBBBBBBB\f1	\f4AAAAAAAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.ne 10
+.TP
+8-bit ABGR (4 bytes per pixel)
+
+.TS
+;
+l l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1	\f4 byte 3 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4AAAAAAAA\f1	\f4BBBBBBBB\f1	\f4GGGGGGGG\f1	\f4RRRRRRRR\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8_R\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+10-bit RGB (one 32-bit integer per pixel)
+
+.TS
+;
+l.
+\f431             int             0\f1
+\f4+------------------------------+\f1
+\f4RRRRRRRRRRGGGGGGGGGGBBBBBBBBBB00\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_10_10_10_2\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+10-bit RGBA (one 32-bit integer per pixel)
+
+.TS
+;
+l.
+\f431             int             0\f1
+\f4+------------------------------+\f1
+\f4RRRRRRRRRRGGGGGGGGGGBBBBBBBBBBAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_10_10_10_2\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.ne 10
+.TP
+12-bit RGBA (6 bytes per pixel)
+
+.TS
+;
+l l l l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1	\f4 byte 3 \f1	\f4 byte 4 \f1	\f4 byte 5 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4RRRRRRRR\f1	\f4RRRRGGGG\f1	\f4GGGGGGGG\f1	\f4BBBBBBBB\f1	\f4BBBBAAAA\f1	\f4AAAAAAAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_S12\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.ne 10
+.TP
+padded 12-bit RGB (three 16-bit shorts per pixel)
+
+.TS
+;
+l l l.
+\f4    short 0     \f1	\f4    short 1     \f1	\f4    short 2     \f1
+\f415             0\f1	\f415             0\f1	\f415             0\f1
+\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1
+\f4ssssRRRRRRRRRRRR\f1	\f4ssssGGGGGGGGGGGG\f1	\f4ssssBBBBBBBBBBBB\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_S12in16R\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+padded 12-bit RGBA (four 16-bit shorts per pixel)
+
+.TS
+;
+l l l l.
+\f4    short 0     \f1	\f4    short 1     \f1	\f4    short 2     \f1	\f4    short 3     \f1
+\f415             0\f1	\f415             0\f1	\f415             0\f1	\f415             0\f1
+\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1
+\f4ssssRRRRRRRRRRRR\f1	\f4ssssGGGGGGGGGGGG\f1	\f4ssssBBBBBBBBBBBB\f1	\f4ssssAAAAAAAAAAAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_S12in16R\f1
+\f3ML_COLORSPACE_RGB_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.ne 15
+.SH CbYCr EXAMPLES
+
+.ne 10
+.TP
+8-bit CbYCr (3 bytes per pixel)
+
+.TS
+;
+l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4bbbbbbbb\f1	\f4YYYYYYYY\f1	\f4rrrrrrrr\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+8-bit CbYCrA (4 bytes per pixel)
+
+.TS
+;
+l l l l.
+\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1	\f4 byte 3 \f1
+\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1
+\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+\f4bbbbbbbb\f1	\f4YYYYYYYY\f1	\f4rrrrrrrr\f1	\f4AAAAAAAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_8\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.ne 10
+.TP
+10-bit CbYCr (one 32-bit integer per pixel)
+
+.TS
+;
+l.
+\f431             int             0\f1
+\f4+------------------------------+\f1
+\f4bbbbbbbbbbYYYYYYYYYYrrrrrrrrrr00\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_10_10_10_2\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_444\f1
+.fi
+
+.ne 10
+.TP
+10-bit CbYCrA (one 32-bit integer per pixel)
+
+.TS
+;
+l.
+\f431             int             0\f1
+\f4+------------------------------+\f1
+\f4bbbbbbbbbbYYYYYYYYYYrrrrrrrrrrAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_10_10_10_2\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.ne 10
+.TP
+padded 12-bit CbYCrA (four 16-bit shorts per pixel)
+
+.TS
+;
+l l l l.
+\f4    short 0     \f1	\f4    short 1     \f1	\f4    short 2     \f1	\f4    short 3     \f1
+\f415             0\f1	\f415             0\f1	\f415             0\f1	\f415             0\f1
+\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1
+\f4ssssbbbbbbbbbbbb\f1	\f4ssssYYYYYYYYYYYY\f1	\f4ssssrrrrrrrrrrrr\f1	\f4ssssAAAAAAAAAAAA\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_S12in16R\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_4444\f1
+.fi
+
+.SH 422X CbYCr EXAMPLES
+
+.ne 13
+.TP
+10-bit 422 CbYCr (5 bytes per 2 pixels)
+
+.TS
+;
+l l l l l l.
+	\f4 byte 0 \f1	\f4 byte 1 \f1	\f4 byte 2 \f1	\f4 byte 3 \f1	\f4 byte 4 \f1
+	\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1	\f47      0\f1
+	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1	\f4+------+\f1
+	\f4bbbbbbbb\f1	\f4bbYYYYYY\f1	\f4YYYYrrrr\f1	\f4rrrrrrYY\f1	\f4YYYYYYYY\f1
+					
+pixel 1	\f4........\f1	\f4........\f1	\f4........\f1	\f4......  \f1	\f4        \f1
+pixel 2	\f4........\f1	\f4..      \f1	\f4    ....\f1	\f4........\f1	\f4........\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_10\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_422\f1
+.fi
+
+.ne 10
+.TP
+padded 12-bit 422 CbYCr (four 16-bit shorts per 2 pixels)
+
+.TS
+;
+l l l l.
+\f4    short 0     \f1	\f4    short 1     \f1	\f4    short 2     \f1	\f4    short 3     \f1
+\f415             0\f1	\f415             0\f1	\f415             0\f1	\f415             0\f1
+\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1	\f4+--------------+\f1
+\f4ssssbbbbbbbbbbbb\f1	\f4ssssYYYYYYYYYYYY\f1	\f4ssssrrrrrrrrrrrr\f1	\f4ssssYYYYYYYYYYYY\f1
+
+\f41   ............\f1	\f4    ............\f1	\f4    ............\f1	\f4                \f1
+\f42   ............\f1	\f4                \f1	\f4    ............\f1	\f4    ............\f1
+
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_S12in16R\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_422\f1
+.fi
+
+.ne 13
+.TP
+10-bit 4224 CbYCrA (two 32-bit integers per 2 pixels)
+
+.TS
+;
+l l l.
+	\f431            int 0            0\f1	\f431            int 1            0\f1
+	\f4+------------------------------+\f1	\f4+------------------------------+\f1
+	\f4bbbbbbbbbbYYYYYYYYYYAAAAAAAAAA00\f1	\f4rrrrrrrrrrYYYYYYYYYYAAAAAAAAAA00\f1
+					
+1	\f4..............................\f1	\f4..........\f1
+2	\f4..........\f1	\f4..............................\f1
+.TE
+.DT
+
+.nf
+\f3ML_PACKING_10_10_10_2\f1
+\f3ML_COLORSPACE_CbYCr_*\f1
+\f3ML_SAMPLING_4224\f1
+.fi
+
+.SH SEE ALSO
+mlImageParameters(3dm),
+mlIntro(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,32 @@
+#! /bin/csh
+
+if ( `uname -o` == Cygwin ) then
+setenv PLATFORM win32
+else
+## assume linux for now
+setenv PLATFORM linux
+endif
+
+# assume the current directory to be the top of the source tree (or WORKAREA)
+setenv WORKAREA `pwd | xargs dirname`
+setenv XPROOT `pwd`
+setenv DIST_ROOT $XPROOT/$PLATFORM
+setenv LROOT $DIST_ROOT
+setenv BOOT_ROOT $XPROOT/oss/make/$PLATFORM
+if ( $PLATFORM == win32 ) then
+setenv _MLMODULE_ROOT `cygpath -m $DIST_ROOT`
+else
+setenv _MLMODULE_ROOT $DIST_ROOT
+endif
+
+if ( $PLATFORM == linux ) then
+if $?LD_LIBRARY_PATH then
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$DIST_ROOT/usr/lib
+else
+setenv LD_LIBRARY_PATH $DIST_ROOT/usr/lib
+endif
+endif
+
+setenv PATH "${PATH}:${DIST_ROOT}/usr/bin"
+
+

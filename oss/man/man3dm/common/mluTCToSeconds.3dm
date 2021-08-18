@@ -1,0 +1,124 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluTCToSeconds 3dm "\*(PR" "\*(BN"
+.SH NAME
+mluTCToSeconds, mluTCFromSeconds \- digital media timecode mathematics
+.SH SYNOPSIS
+.nf
+#include <ML/mlu.h>
+.sp .8v
+\f3MLstatus mluTCToSeconds\f1
+\f3    ( const MLUtimecode *tc,\f1
+\f3      double *seconds )\f1
+.sp .8v
+\f3MLstatus mluTCFromSeconds\f1
+\f3    ( MLUtimecode * result,\f1
+\f3      const int tc_type,\f1
+\f3      const double seconds )\f1
+.sp .8v
+.sp .8v
+.fi
+.SH TYPES
+.TP 16
+\f2MLUtimecode\f1
+A structure containing a representation of SMPTE time code on which
+certain mathematical and utility functions can be performed.
+Can be
+used with:
+.B mluTCAddTC(3dm)
+, 
+.B mluTCAddFrames(3dm)
+,
+.B mluTCToString(3dm)
+, 
+.B mluTCFromSeconds(3dm)
+,
+.B mluTCToSeconds(3dm)
+, 
+.B mluTCFromString(3dm)
+,
+.B mluTCFramesPerDay(3dm)
+, and 
+.B mluTCFramesBetween(3dm)
+\.
+See also 
+.B MLUtimecode(3dm)
+\.
+
+.SH ARGUMENTS
+.TP 16
+\f2result\f1
+The result of converting fractional seconds past midnight into a
+timecode value.
+
+.TP
+\f2tc\f1
+The timecode value to convert into seconds.
+
+.TP
+\f2seconds\f1
+The number of fractional seconds past midnight to convert, or the
+result of converting a \f3MLUtimecode\f1 into fractional seconds past
+midnight.
+
+.TP
+\f2tc_type\f1
+When converting from fractional seconds to a \f3MLUtimecode\f1, the
+timecode format into which the seconds should be converted.
+See 
+.B tc_type(3dm)
+\.
+
+.SH DESCRIPTION
+
+These functions provide a simple means of converting between
+fractional seconds past midnight and \f3MLUtimecode\f1 timecodes.
+
+When converting from seconds to timecode, a valid \f2tc_type\f1 must
+be supplied (see \f3tc_type(3dm)\f1).
+The \f2tc_type\f1 of
+\f2result\f1 will be the same as the \f2tc_type\f1 that is passed to
+\f3mluTCFromSeconds\f1.
+
+For \f3mluTCFromSeconds\f1, the \f2seconds\f1 value given will be
+rounded to the nearest frame.
+
+In order to convert to and from seconds, these routines need to assume
+some timecode rate in frames per second.
+They will choose the rate
+given in the MLU_TC_RATE bits of the specified \f2tc_type\f1.
+For drop-frame timecode, this is \f3not\f1 the rate of the underlying
+video signal, and over the long term there will be drift.
+See
+\f3tc_type(3dm)\f1 for more information on this.
+
+.SH RETURN VALUE
+
+If a \f3MLUtimecode\f1 operand (\f2tc\f1) contains an
+illegal timecode value (e\.g\., a negative entry, invalid frame number,
+etc.), \f3mluTCToSeconds\f1 will return ML_STATUS_INVALID_ARGUMENT, and the contents of
+\f2seconds\f1 will be undefined.
+
+If the number of seconds passed to \f3mluTCFromSeconds\f1 is negative,
+or greater than the number of seconds in a 24-hour day,
+\f3mluTCFromSeconds\f1 will return ML_STATUS_INVALID_ARGUMENT, and the contents of
+\f2result\f1 will be undefined.
+
+If an invalid \f2tc_type\f1 value is passed in to \f3mluTCFromSeconds\f1,
+ML_STATUS_INVALID_ARGUMENT is returned.
+
+\f3mluTCToSeconds\f1 and \f3mluTCFromSeconds\f1 return ML_STATUS_NO_ERROR upon
+successful completion.
+
+.SH SEE ALSO
+mluTCFramesBetween(3dm),
+mluTCFramesPerDay(3dm),
+mluTCFromSeconds(3dm),
+mluTCFromString(3dm),
+mluTCFromString(3dm),
+mluTCToSeconds(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

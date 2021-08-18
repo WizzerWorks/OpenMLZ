@@ -1,0 +1,69 @@
+#! /bin/sh
+# This script is for linux OpenML ML sample implementation build only
+
+#
+# To install the source tarball:
+#
+#    rm -rf oss
+#    rm -rf GNUmakefile README LICENSES BUILD VERIFY
+#    tar -xxvf ml-1.0.tar
+#
+
+# greeting
+    if [ x$1 != x-n ]; then
+	echo -e "\nThis script will set the relevant environment variables"
+	echo -e "and build and install ML modules into a test directory."
+	echo -e "To only set the variables in your current shell, use"
+	echo -e ". ./BUILD_LINUX and enter 'n' at the next prompt."
+    fi
+
+# set the environment variables
+    echo -e "\nSetting the environment variables now.\n"
+
+# assume the current directory to be the top of the source tree (or WORKAREA)
+    export PLATFORM=linux
+    export WORKAREA=`pwd | xargs dirname`
+    export XPROOT=`pwd`
+    export DIST_ROOT=$XPROOT/$PLATFORM
+    export LROOT=$DIST_ROOT
+    export BOOT_ROOT=$XPROOT/oss/make/$PLATFORM
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DIST_ROOT/usr/lib
+    export PATH=$PATH:$DIST_ROOT/usr/bin
+
+# display them to the user
+    for word in WORKAREA XPROOT DIST_ROOT LROOT BOOT_ROOT LD_LIBRARY_PATH PATH
+    do
+	printenv | grep "^$word"
+    done
+
+# if only invoked to set environment variables, leave now
+    if [ x$1 = x-n ]; then
+	exit
+    fi
+
+# query the user to continue the build
+    echo -en "\nContinue with the build of the ML modules? (y/n)[y] "
+    read yesno
+
+    case $yesno in
+	[nN]*)
+	    ;;
+
+	*)  make clean
+	    make distclean
+	    make headers
+	    make
+	    make install
+	    echo -e "\nThe ML build has completed."
+
+	    echo -e "\nThe ML dsos, executables, example source, man pages, and "
+	    echo -e "include files have been installed under $DIST_ROOT."
+	    echo -e "Example executables are under $XPROOT/oss/examples/common."
+
+	    echo -e "\nRun the VERIFY_LINUX script to verify the operation of ML."
+
+	    ;;
+    esac
+
+# fini
+# ===

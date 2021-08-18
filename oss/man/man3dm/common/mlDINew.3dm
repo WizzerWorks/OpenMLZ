@@ -1,0 +1,76 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlDINew 3dm
+.SH NAME
+mlDINew: mlDINewPhysicalDevice \- used to register ML devices.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml_didd.h>\f1
+.sp .8v
+\f3MLstatus MLAPI mlDINewPhysicalDevice(mlDISysCtxt mlDISysCtxt,
+					mlOSDriverCtxt pDriver,
+					const MLbyte* ddCookie,
+					MLint32 ddCookieSize);
+.fi
+.SH PARAMETER
+.TP 16
+\f2mlDISysContext\f1
+Pointer to opaque structure used by the DI layer to store information
+related to this particular system.  This was passed to the mlmodule
+in the \f3ddInterrogate\f1(3dm) call.
+.TP
+\f2pDriver\f1
+Pointer to opaque structure used by the DI layer to store information
+related to this particular driver.  This was passed to the mlmodule
+in the \f3ddInterrogate\f1(3dm) call.
+.TP
+\f2ddCookie\f1
+Pointer to an array of information which your module would like
+stored by the device-independent layer.  That information will be
+available to your module via the ddConnect(3dm) call.  Note that
+information stored in the cookie will later be accessed by a 
+different process, in a different address space, so it must only
+contain process-independent information.
+.TP
+\f2ddCookieSize\f1
+The number of bytes in the ddCookie array.
+.P
+
+.SH DESCRIPTION
+
+This routine should be called from within a device-dependent module's
+\f3ddInterrogate\f1(3dm) routine.  It is used to describe each
+physical ML device which the calling module wishes to advertise
+through the ML interface.
+
+When \f3ddInterrogate\f1(3dm) is called, your module is passed opaque
+references to the system and your module.  For each installed device,
+call \f3mlDINewPhysicalDevice\f1, passing it those references, along
+with the device location and a module-dependent "cookie".  Later,
+whenever the device-independent layer needs to access that physical
+device, it will call your module's ddConnect(3dm) routine, passing it
+that private module-dependent cookie.
+
+It is acceptable for a single module to call
+\f3mlDINewPhysicalDevice\f1 multiple times (indicating that it
+supports more than one physical device).
+
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The object was successfully opened.
+.TP
+ML_STATUS_OUT_OF_MEMORY
+There is insufficient memory to
+perform the operation
+
+.SH SEE ALSO
+mlDIIntro(3dm),
+ddInterrogate(3dm),
+ddConnect(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

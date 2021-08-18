@@ -1,0 +1,57 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlXcodeWork 3dm
+.SH NAME
+mlXcodeWork \- perform a unit of transcoder work
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlXcodeWork(MLopenid openid);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media transcoder.
+
+.SH DESCRIPTION
+
+For software-only transcoders opened with the ML_XCODE_MODE_INT32
+open option explicitly set to ML_XCODE_MODE_SYNCHRONOUS,
+this function allows an application to control exactly when (and in
+which thread) the processing for that codec takes place.
+
+This function performs one unit of processing for the specified codec.
+The processing is done in the thread of the calling process and the
+call does not return until the processing is complete.
+
+For most codecs a "unit of work" is the processing of a single buffer
+from the source queue and the writing of a single resulting buffer on
+the destination queue.
+
+Note - the default behavior for all codecs is for processing to
+happen automatically as a side effect of enqueueing messages to the
+device.
+This function only applies to software codecs and only
+applies if they are opened with the ML_XCODE_MODE_SYNCHRONOUS open option.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The software transcoder performed one unit of work successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified device handle is invalid.
+.TP
+ML_STATUS_NO_OPERATION
+There was no work to be done.
+.TE
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlOpen(3dm),
+mlXcodeGetOpenPipe(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

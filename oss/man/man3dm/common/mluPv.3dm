@@ -1,0 +1,55 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluPv 3dm
+.SH NAME
+mluPv: mluPvPrintMsg \- print a MLpv parameter list
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+\f3#include <ML/mlu.h>\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluPvPrintMsg(MLint64 deviceId, MLpv* params);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2deviceId\f1
+A device identifier (either a static id obtained by calling
+getCapabilties, or an open id obtained by calling mlOpen).
+.TP
+\f2params\f1
+a MLpv parameter list.
+
+.SH DESCRIPTION
+Use to print a parameter list as it would be interpreted by the specified device.
+
+
+.SH NOTES
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+.TP
+ML_STATUS_INVALID_ID
+The specified device id is invalid
+.TP
+ML_STATUS_INVALID_VALUE
+One of the parameters in the list has an invalid value
+.TP
+ML_STATUS_INVALID_PARAMETER
+One of the parameters in the list is not recognized by that device
+.TP
+ML_STATUS_INVALID_ARGUMENT
+The mlPV list is invalid (perhaps a NULL pointer?).
+
+.SH SEE ALSO
+mlParameters(3dm),
+mlPvString(3dm),
+mlIntro(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+

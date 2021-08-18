@@ -1,0 +1,48 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlClose 3dm
+.SH NAME
+mlClose \- closes a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlClose(MLopenid openid);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\fP
+handle to a previously-opened digital media object.
+
+.SH DESCRIPTION
+
+Closes a previously opened device.
+Any pending un-processed messages
+will be discarded.
+It is an error to perform any operation on an
+device after closing it (including trying to close it again).
+
+This is a blocking call.
+It does not return until the device has been
+closed and any resources freed.
+
+Note, for transcoders the close must be called using the open device
+id returned by mlOpen and not using individual pipe ids (those pipes
+were opened as a side-effect of the call to mlOpen, and will be
+closed as a side-effect of the call to mlClose).
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The object was successfully closed.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id is invalid.
+
+.SH SEE ALSO
+mlOpen(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

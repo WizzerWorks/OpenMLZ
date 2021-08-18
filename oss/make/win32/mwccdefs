@@ -1,0 +1,118 @@
+#
+# Settings for the Metrowerks Compiler suite
+#
+
+# If the Metrowerks command-line tools are not in the path,
+# the env var MWCC_PATH must be defined (NOTE: with a trailing slash!)
+
+#
+# Assembler
+#
+## FIXME: no assembler in the Metrowerks suite?
+AS		=
+
+#
+# Compiler
+#
+CC		= $(MWCC_PATH)mwcc
+CPP		= $(CC) -E
+CXX		= $(CC)
+
+OBJ_SUFFIX=obj
+
+# DASH_D is the command-line option to define a macro
+# With most normal compilers, this is '-D'
+DASH_D          = -D
+
+# Command-line option to request that debugging information be
+# generated
+GEN_DEBUG_INFO  = -g
+
+CC_WARN_LEVEL	= -warn on -w nounusedarg
+
+ifneq ($(OPENML_DEBUG),0)
+CC_OPTIMIZER	= -O0
+else
+CC_OPTIMIZER	= -O2
+endif
+
+CC_DEPOPTS	= -MD
+
+GCDEFS	=
+
+# INC_DASH_I is the command-line option to specify include paths
+# On normal platforms, this is "-I"
+INC_DASH_I = -I
+
+# Note that the Metrowerks suite is (obviously) not compiled with
+# cygwin, so it doesn't understand cygwin mount points. We must
+# convert to native mode, using the cygpath utility (included with
+# cygwin). The "-m" option converts to a "mixed mode" -- NT, but with
+# forward slashes instead of backslashes.
+CC_INCDIR	= $(LROOT)/usr/include
+
+GCINCS	        = $(CC_INCDIR)
+GCXXDEFS	=
+GCXXINCS	= $(CC_INCDIR)
+
+# For platform-independence, include paths specified in other parts of
+# the makefile system (eg: in the GNUmakefile) are not prefixed by -I,
+# so add the -I now. Also sanitize the paths -- and include "-gccinc"
+# which was not added to GCINCS/GCXXINCS because that would make it more
+# difficult to sanitize that part of the path.
+CINCS	= -gccinc $(foreach path, $(GCINCS) $(ICINCS) $(LCINCS) $(VCINCS), \
+	-I$(shell cygpath -m $(path)))
+CXXINCS	= -gccinc $(foreach path, \
+	$(GCXXINCS) $(VCXXINCS) $(LCXXINCS) $(ICXXINCS), \
+	-I$(shell cygpath -m $(path)))
+
+# The Metrowerks compiler generates dependency files named ".dep"
+# Keep track of these, to clean them up
+MWCC_DEPENDS = $(DEPENDS:.d=.dep)
+XDIRT += $(MWCC_DEPENDS)
+
+#
+# Linker
+#
+LD		= $(MWCC_PATH)mwld
+
+##GLDOPTS := $(sort -L$(shell cygpath -m /lib) -L$(shell cygpath -m /usr/lib))
+GLDOPTS	=
+GLDLIBS	=
+
+# Must sanitize object paths for Metrowerks...
+LDOBJS	= $(foreach obj, $(VLDOBJS) $(LLDOBJS) $(ILDOBJS) $(GLDOBJS), \
+	$(shell cygpath -m $(obj)))
+
+# Also sanitize the lib paths. Then add "-L" to each path, and sort the
+# result -- the point of sorting is to eliminate duplicate paths.
+LDLIBPATHS = $(sort $(foreach path, \
+		$(VLDLIBPATHS) $(LLDLIBPATHS) $(ILDLIBPATHS) $(GLDLIBPATHS), \
+		-L$(shell cygpath -m $(path))))
+
+# Libs are specified in a compiler-independent way, which is just the
+# base name of the lib. For MWCC, the correct way to specify a lib on
+# the link line is "-lname", so add the prefix now.
+# Note: this will look for libname.lib or libname.a or name -- so the
+# for atypically-named libs, eg: ML10.lib, it is necessary to specify
+# the full name (including suffix)
+LDLIBS	= $(foreach lib, \
+		$(VLDLIBS) $(LLDLIBS) $(ILDLIBS) $(GLDLIBS), \
+		-l$(lib))
+
+EXE_LDOPTS = -noimplib
+
+# Exporting --
+# Makefile must define NT_DEF_FILE as the ".def" file specifying the
+# symbols to be exported.
+
+DSO_COPTS =
+DSO_LDOPTS = -shared -f $(NT_DEF_FILE) -nostdlibfiles
+
+# LD_DASH_O is the command-line option to name the output of the link
+# On normal platforms, this is "-o " (with a trailing space). But to 
+# allow for MSVC, we need the usage to be:
+#  $(LD_DASH_O)$(OUTPUT_NAME)
+# ie: the space must be built-in to the LD_DASH_O variable.
+EOF =
+LD_DASH_O := -o $(EOF)

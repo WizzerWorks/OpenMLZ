@@ -1,0 +1,6 @@
+#!/bin/sh
+
+find ../oss/ -name "*.c"   -print -exec dos2unix \{\} \;
+find ../oss/ -name "*.cxx" -print -exec dos2unix \{\} \;
+find ../oss/ -name "*.h"   -print -exec dos2unix \{\} \;
+

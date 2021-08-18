@@ -1,0 +1,125 @@
+#! gmake
+#*************************************************************************
+#
+# Makefile - ML SDK examples
+#
+# This makefile uses the following (optional) environment variables:
+#
+#   ML_INCLUDE_PATH - path to the ML header files. Must point to the
+#                     directory that contains the "ML" sub-directory
+#                     If not defined, the headers must be installed in
+#                     the default search path (eg, /usr/include is in
+#                     the search path, so the headers must be in
+#                     /usr/include/ML)
+#
+#   ML_LIB_PATH     - path to the ML libraries: libML.so and libMLU.so
+#                     If not defined, the libraries must be installed in
+#                     the default lib search path (eg, in /usr/lib)
+#                     Note that if the libraries are *not* in a default
+#                     directory, it is likely also necessary to set
+#                     LD_LIBRARY_PATH in order to be able to run the
+#                     example programs
+#
+#   ML_DEBUG        - if set to anything except 0 (zero), will compile
+#                     the examples with debug settings.
+#                     Setting the variable to 0 (zero), or not setting
+#                     it at all, will compile the examples in non-debug,
+#                     optimised mode.
+#
+#*************************************************************************
+
+#
+# Define all the targets (executables) built in this directory
+#
+TARGETS = audiotomem memtoaudio audiotofile filetoaudio \
+	vidtomem memtovid vidtogfx controls
+
+CXXFILES = audiotomem.c memtoaudio.c audiotofile.c filetoaudio.c \
+	vidtomem.c memtovid.c vidtogfx.c controls.c utils.c audioUtils.c
+
+#
+# Tell the compiler where our header files are located.
+#
+# If the ML_INCLUDE_PATH env var is defined, we will use that; otherwise,
+# we leave this variable empty, and the ML includes are expected to be
+# in the standard include search path (eg, /usr/include/...)
+ifdef ML_INCLUDE_PATH
+CINCS = -I$(ML_INCLUDE_PATH)
+else
+CINCS =
+endif
+
+#
+# Tell the linker where our libraries are located.
+#
+# If the ML_LIB_PATH env var is defined, we will use that; otherwise,
+# we leave this variable empty, and the ML libs are expected to be
+# in the standard lib search path (eg, /usr/lib/...)
+ifdef ML_LIB_PATH
+LDPATH = -L$(ML_LIB_PATH)
+else
+LDPATH =
+endif
+
+#
+# Tell the linker which libraries to link with the executable.
+#
+LDLIBS = -laudiofile -lML -lMLU
+
+#
+# Turn on debugging if the ML_DEBUG is set and non-zero, otherwise,
+# turn on optimisations
+#
+ML_DEBUG ?= 0
+
+ifneq ($(ML_DEBUG),0)
+CXXFLAGS = -g -O0
+else
+CXXFLAGS = -O2
+endif
+
+#
+# Use the C compiler (not the default C++)
+# (This is important, because some of the examples -- eg, vidtomem -- do
+# not compile with g++)
+#
+CXX = gcc
+
+#
+# The default target, 'all', depends on the building of the target
+# executable(s).
+#
+all: default $(_FORCE)
+
+default: $(TARGETS) 
+
+.c.o:
+	$(CXX) $(CXXFLAGS) $(CINCS) -c $^
+
+LINK_RULE = $(CXX) $(CXXFLAGS) $(CINCS) -o $@ $^ $(LDPATH) $(LDLIBS)
+
+%: %.o
+	$(LINK_RULE)
+
+audiotomem: audiotomem.o utils.o audioUtils.o
+
+memtoaudio: memtoaudio.o utils.o audioUtils.o
+
+audiotofile: audiotofile.o utils.o audioUtils.o
+
+filetoaudio: filetoaudio.o utils.o audioUtils.o
+
+vidtomem: vidtomem.o utils.o
+
+memtovid: memtovid.o utils.o
+
+vidtogfx: vidtogfx.o utils.o
+	$(LINK_RULE) -L/usr/X11R6/lib -lGL -lGLU -lXaw -lXmu -lXext -lX11
+
+controls: controls.o utils.o
+
+install: all
+	 $(NOOP)
+
+clean: $(FORCE)
+	rm -f $(TARGETS) *.o

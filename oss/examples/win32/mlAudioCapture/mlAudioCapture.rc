@@ -1,0 +1,165 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""winres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG_MAIN DIALOG DISCARDABLE  0, 0, 321, 220
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ML Audio Capture Configuration"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "Exit",IDC_EXIT,93,186,50,14
+    PUSHBUTTON      "Next",IDC_NEXT,177,186,50,14
+    COMBOBOX        IDC_COMBO_DEVICE,58,42,212,54,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "device:",IDC_STATIC,23,44,24,8
+    LTEXT           "path:",IDC_STATIC,30,71,17,8
+    COMBOBOX        IDC_COMBO_DEVPATH,58,70,212,66,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    CONTROL         "mono",IDC_RADIO_MONO,"Button",BS_AUTORADIOBUTTON,74,98,
+                    33,10
+    CONTROL         "stereo",IDC_RADIO_STEREO,"Button",BS_AUTORADIOBUTTON,
+                    134,98,35,10
+    LTEXT           "rate:",IDC_STATIC,32,126,15,8
+    LTEXT           "output file:",IDC_STATIC,13,154,34,8
+    EDITTEXT        IDC_EDIT_FILENAME,58,151,162,14,ES_AUTOHSCROLL
+    LTEXT           "System:",IDC_STATIC,21,17,26,8
+    LTEXT           "sysname",IDC_SYS_NAME,58,17,212,8
+    LTEXT           "channels:",IDC_STATIC,15,99,32,8
+    CONTROL         "44.1 KHz",IDC_RADIO_44KHz,"Button",BS_AUTORADIOBUTTON,
+                    54,125,45,10
+    CONTROL         "48 KHz",IDC_RADIO_48KHz,"Button",BS_AUTORADIOBUTTON,106,
+                    125,39,10
+    CONTROL         "96 KHz",IDC_RADIO_96KHz,"Button",BS_AUTORADIOBUTTON,152,
+                    125,39,10
+END
+
+IDD_DIALOG_CAPTURE DIALOG DISCARDABLE  0, 0, 326, 199
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ML Capture"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "Start",IDC_START,32,145,50,14
+    PUSHBUTTON      "Stop",IDC_STOP,104,145,50,14
+    PUSHBUTTON      "Done",IDC_DONE,67,168,50,14
+    LTEXT           "Total time:",IDC_STATIC,48,31,34,10
+    RTEXT           "00:00:00.0",IDC_CAPTURE_TIME,89,31,35,10
+    CTEXT           "999999",IDC_DROPPED_BUFFS,44,107,25,8
+    LTEXT           "Total dropped:",IDC_STATIC,33,95,47,8
+    LTEXT           "Effective rate:",IDC_STATIC,35,42,47,10
+    RTEXT           "99.99",IDC_EFFECTIVE_RATE,89,42,27,10
+    LTEXT           "KHz",IDC_STATIC,121,42,28,10
+    GROUPBOX        "Dropped buffers",IDC_STATIC,16,70,153,68
+    GROUPBOX        "Capture progress",IDC_STATIC,16,17,153,44
+    LISTBOX         IDC_LIST_DROPPED_BUFFS,93,82,70,49,LBS_NOSEL | 
+                    WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Signal strength",IDC_STATIC,181,17,130,164,BS_LEFT
+    CONTROL         "Monitor signal strength",IDC_CHECK_MONITOR,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,196,31,100,12
+    GROUPBOX        "Left",IDC_LEFT_CHANNEL,199,69,45,106,BS_CENTER
+    GROUPBOX        "Right",IDC_RIGHT_CHANNEL,247,69,45,106,BS_CENTER
+    LTEXT           "Draw",IDC_RCHAN_DRAW,257,82,26,89
+    LTEXT           "Draw",IDC_LCHAN_DRAW,209,82,26,89
+    PUSHBUTTON      "Reset Max",IDC_BUTTON_RESET_MAX,221,47,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_DIALOG_MAIN, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 314
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 213
+    END
+
+    IDD_DIALOG_CAPTURE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 319
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 192
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON_LARGE          ICON    DISCARDABLE     "icon1.ico"
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

@@ -1,0 +1,251 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#*************************************************************************** 
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#*************************************************************************** 
+#
+# Spec file for the Example ISM
+#
+# The syntax and semantics of the file are identical to that of an
+# RPM(8) spec file with the added flexibility of using arbitrary macros.
+# There are four classes of macros that can be specified:
+#
+# 1. RPM Defined Macros
+#       These are specified using the syntax $macro_name. The following
+#       macros are defined by RPM:
+#
+#       RPM_SOURCE_DIR      - The location of the source archive
+#       RPM_BUILD_DIR       - The location of the build directory
+#       RPM_DOC_DIR         - The default location for documentation (/usr/doc)
+#       RPM_OPT_FLAGS       - RPM build options
+#       RPM_ARCH            - Build system architecture
+#       RPM_OS              - Build system operating system
+#       RPM_BUILD_ROOT      - Root location for all install targets
+#       RPM_PACKAGE_NAME    - Package name (use ISM_NAME below)
+#       RPM_PACKAGE_VERSION - Package version (use ISM_VERSION below)
+#       RPM_PACKAGE_RELEASE - Package release number (use PKG_RELEASE below)
+#
+# 2. SGI Build Defined Macros
+#       These are specified using the syntax $(macro_name). While
+#       additional macros can be defined by Makefiles using the LSPECVARS
+#       macro, the following core set of macros are always defined:
+#
+#       ISM_NAME        - Name of the ISM (e.g. example)
+#       ISM_VERSION     - Version number of the ISM (e.g. 1.0)
+#       PKG_SOURCE_NAME - Name of the source archive
+#       PKG_RELEASE     - Package release number
+#       PKG_BUILDER     - Builder of the package
+#       PKG_DIST        - Distribution name
+#
+# 3. Environment Variables
+#       All environment variables are available using the syntax
+#       $(variable_name).
+#
+
+#
+# Do not change the following seven entries
+#
+Name: $(ISM_NAME)
+Version: $(ISM_VERSION)
+Release: $(PKG_RELEASE)
+Distribution: $(PKG_DIST)
+Packager: $(PKG_BUILDER)
+BuildRoot: /var/tmp/$(ISM_NAME)
+Source: $(PKG_SOURCE_NAME)
+
+#
+# Change the following as appropriate
+#
+Summary: OpenML Media Library
+Vendor: Silicon Graphics, Inc.
+URL: http://www.sgi.com
+License: SGI Free Software License B
+
+#
+# The setting of the Group tag should be picked from the list
+# of values pre-defined by Red Hat in the file /usr/doc/rpm-<version>/GROUPS.
+# The value is similar to a directory path (e.g. "Networking/Daemons").
+#
+Group: Development/Libraries
+%description
+This package contains ML core libraries, headers files, and documentation.
+
+%prep
+%setup
+
+%build
+make
+
+#
+# The install targets must install relative to our ISM rather than
+# relative to the root directory. To do this DIST_ROOT is defined
+# for each Makefile using the RPM_BUILD_ROOT environment variable.
+# This variable is given its value from an rpmrc file that is
+# automatically created by the build environment during packaging.
+#
+# Also demonstrated here is the method for installing symbolic
+# links. The link 'howdy' is created by the install target in the Makefile.
+# A corresponding entry for the link must be made in the %files section.
+#
+%install
+make DIST_ROOT="$RPM_BUILD_ROOT" install
+
+
+#
+# It is required to explicitly specify file and directory attributes. 
+# The mode field may be left to default, '-', but the owner and group
+# must be explicitly specified or RPM will use the owner and group name
+# of the person doing the build. Also notice the use of macros that were
+# defined in ismdefs using the LSPECVARS macro (e.g. ISM_DOC_DIR).
+#
+# RPM is VERY picky about removal of directories on uninstall. If
+# you do not explicitly create a directory in the spec file, it
+# will not be removed if empty. This will lead to an error message
+# on uninstalling. To avoid this, explicitly create every new directory
+# and its subdirectory.
+#
+%files
+
+%attr(-, root, root) %dir $(ISM_INCLUDE_DIR)
+%attr(-, root, root) %dir $(ISM_LIBRARY_DIR)
+%attr(-, root, root) %dir /usr/man/man3
+
+#       Note the use of the '*' wildcard to install all versions of the
+#       libhello shared library (i.e. executable and links).
+
+#libraries
+%attr(755, root, root) $(ISM_LIBRARY_DIR)/libML.so*
+%attr(755, root, root) $(ISM_LIBRARY_DIR)/libMLU.so*
+
+#header files
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlancdata.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlaudio.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mldefs.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlfifo.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlimage.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mljack.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlparam.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlpath.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlqueue.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/ml.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mltypes.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mluser.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlxcode.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlcompression.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/ml_didd.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/ml_oswrap.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/ml_private.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlu.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlucapabilities.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mluconvenience.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlutiming.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlutimecode.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mluaudio.h
+%attr(444, root, root) $(ISM_INCLUDE_DIR)/mlvideo.h
+
+
+# ml man pages
+%attr(644, root, root) /usr/man/man3/mlIntro.3dm*
+%attr(644, root, root) /usr/man/man3/mlGetVersion.3dm*
+%attr(644, root, root) /usr/man/man3/mlParameters.3dm*
+%attr(644, root, root) /usr/man/man3/mlGetCapabilities.3dm*
+%attr(644, root, root) /usr/man/man3/mlPvGetCapabilities.3dm*
+%attr(644, root, root) /usr/man/man3/mlFreeCapabilities.3dm*
+%attr(644, root, root) /usr/man/man3/mlOpen.3dm*
+%attr(644, root, root) /usr/man/man3/mlClose.3dm*
+%attr(644, root, root) /usr/man/man3/mlGetControls.3dm*
+%attr(644, root, root) /usr/man/man3/mlSetControls.3dm*
+%attr(644, root, root) /usr/man/man3/mlSendControls.3dm*
+%attr(644, root, root) /usr/man/man3/mlSendBuffers.3dm*
+%attr(644, root, root) /usr/man/man3/mlReceiveMessage.3dm*
+%attr(644, root, root) /usr/man/man3/mlGetWaitHandle.3dm*
+%attr(644, root, root) /usr/man/man3/mlGetMessageCount.3dm*
+%attr(644, root, root) /usr/man/man3/mlBeginTransfer.3dm*
+%attr(644, root, root) /usr/man/man3/mlEndTransfer.3dm*
+%attr(644, root, root) /usr/man/man3/mlXcodeGetOpenPipe.3dm*
+%attr(644, root, root) /usr/man/man3/mlXcodeWork.3dm*
+%attr(644, root, root) /usr/man/man3/mlStatusName.3dm*
+%attr(644, root, root) /usr/man/man3/mlMessageName.3dm*
+%attr(644, root, root) /usr/man/man3/mlPvString.3dm*
+%attr(644, root, root) /usr/man/man3/mlGetSystemUST.3dm*
+%attr(644, root, root) /usr/man/man3/mlVideoParameters.3dm*
+%attr(644, root, root) /usr/man/man3/mlImageParameters.3dm*
+%attr(644, root, root) /usr/man/man3/mlPixel.3dm*
+%attr(644, root, root) /usr/man/man3/mlAudioParameters.3dm*
+
+%attr(644, root, root) /usr/man/man3/ddConnect.3dm*
+%attr(644, root, root) /usr/man/man3/ddInterrogate.3dm*
+%attr(644, root, root) /usr/man/man3/mlDIIntro.3dm*
+%attr(644, root, root) /usr/man/man3/mlDINew.3dm*
+%attr(644, root, root) /usr/man/man3/mlDIQueue.3dm*
+%attr(644, root, root) /usr/man/man3/mlDIid.3dm*
+%attr(644, root, root) /usr/man/man3/mlPvCopy.3dm*
+%attr(644, root, root) /usr/man/man3/mlPvFind.3dm*
+%attr(644, root, root) /usr/man/man3/mlSynchronization.3dm*
+
+#mlu man pages
+%attr(644, root, root) /usr/man/man3/mluCapabilities.3dm*
+%attr(644, root, root) /usr/man/man3/mluDefaults.3dm*
+%attr(644, root, root) /usr/man/man3/mluImageBufferSize.3dm*
+%attr(644, root, root) /usr/man/man3/mluPv.3dm*
+%attr(644, root, root) /usr/man/man3/mluSizes.3dm*
+%attr(644, root, root) /usr/man/man3/mluTCAddTC.3dm*
+%attr(644, root, root) /usr/man/man3/mluTCFramesBetween.3dm*
+%attr(644, root, root) /usr/man/man3/mluTCFramesPerDay.3dm*
+%attr(644, root, root) /usr/man/man3/mluTCToSeconds.3dm*
+%attr(644, root, root) /usr/man/man3/mluTCToString.3dm*
+
+#executables
+%attr(755, root, root) /usr/bin/mlquery
+
+#examples
+%attr(644, root, root) /usr/src/ml/examples/audiotomem.c
+%attr(644, root, root) /usr/src/ml/examples/memtoaudio.c
+%attr(644, root, root) /usr/src/ml/examples/audiotofile.c
+%attr(644, root, root) /usr/src/ml/examples/filetoaudio.c
+%attr(644, root, root) /usr/src/ml/examples/vidtomem.c
+%attr(644, root, root) /usr/src/ml/examples/memtovid.c
+%attr(644, root, root) /usr/src/ml/examples/vidtogfx.c
+%attr(644, root, root) /usr/src/ml/examples/controls.c
+%attr(644, root, root) /usr/src/ml/examples/audioUtils.c
+%attr(644, root, root) /usr/src/ml/examples/audioUtils.h
+%attr(644, root, root) /usr/src/ml/examples/utils.c
+%attr(644, root, root) /usr/src/ml/examples/utils.h
+%attr(644, root, root) /usr/src/ml/examples/README.audio
+%attr(644, root, root) /usr/src/ml/examples/README.video
+%attr(644, root, root) /usr/src/ml/examples/GNUmakefile

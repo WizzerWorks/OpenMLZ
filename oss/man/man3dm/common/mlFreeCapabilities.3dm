@@ -1,0 +1,34 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlFreeCapabilities 3dm
+.SH NAME
+mlFreeCapabilities \- free a ML capabilities list
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlFreeCapabilities(MLpv* capabilities);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2capabilities\fP
+a capabilites list obtained by a call to mlGetCapabilities or mlPvGetCapabilities.
+.SH DESCRIPTION
+Use to free a capabilites list obtained by a call to mlGetCapabilities or mlPvGetCapabilities.
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The call was successful.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+The capabilities pointer is invalid.
+.TE
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlPvGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

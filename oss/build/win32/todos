@@ -1,0 +1,5 @@
+#!/bin/sh
+
+find ../oss/ -name "*.dsw" -exec unix2dos \{\} \;
+find ../oss/ -name "*.dsp" -exec unix2dos \{\} \;
+

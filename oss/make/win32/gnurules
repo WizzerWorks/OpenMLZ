@@ -1,0 +1,32 @@
+#
+# Rules for the GNU compiler
+#
+
+#
+# Create a .def file that contains mangled symbol names
+# Only bother doing this if the makefile actually specified a .def file
+
+ifdef NT_DEF_FILE
+
+# First step: need to list all symbols from the object files
+SYM_LIST_FILE = nm.out
+
+$(SYM_LIST_FILE): $(OBJECTS)
+	nm $(OBJECTS) > $@
+
+# Using symbol list and user-specified .def file, construct our own
+# def file with mangled symbols
+NT_MANGLED_DEF_FILE = mangled$(notdir $(NT_DEF_FILE))
+
+$(NT_MANGLED_DEF_FILE): $(NT_DEF_FILE) $(SYM_LIST_FILE)
+	$(BOOT_ROOT)/mk_gnu_deffile.pl -s $(SYM_LIST_FILE) -d $(NT_DEF_FILE) \
+	> $(NT_MANGLED_DEF_FILE)
+
+$(DSO_TARGET): $(NT_MANGLED_DEF_FILE)
+
+#
+# Make sure these files are cleaned up
+#
+XDIRT += $(SYM_LIST_FILE) $(NT_MANGLED_DEF_FILE)
+
+endif

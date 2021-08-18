@@ -1,0 +1,174 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#***************************************************************************
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#***************************************************************************
+# ismcommonrules - Common build rules for inclusion in the ISM top level
+#	Makefile. This file automatically includes commonrules.
+#
+# See the man page sgibuild(7) for information on the use of this file
+# and its role in the SGI build environment.
+#
+# Note that the commands for certain rules use recursive invocations of
+# make at the same directory level instead of simply depending on the
+# specific target. The reason for this is to assure proper sequencing of
+# the dependent targets when a multijob (-j > 1) build is done. Some
+# versions of make allow parallel builds to be selectively disabled
+# (e.g. using the .NOTPARALLEL target) but GNU make does not provide
+# this feature.
+#
+#***************************************************************************
+
+ifndef _ISMCOMMONRULES_INCLUDED_
+_ISMCOMMONRULES_INCLUDED_ = 1
+
+
+include $(COMMONRULES)
+
+.PHONY: varcheck releasenumber tar tarclean rpmrc dist distclean
+
+#
+# Rule to check that variables that must defined are defined.
+#
+varcheck:
+	@ if [ -z "$(ISM_NAME)" ]; then \
+	    echo -e "\n*** Error: Build variable ISM_NAME must be defined and not empty\n"; \
+	    exit 1; \
+	fi;
+	@ if [ -z "$(ISM_VERSION)" ]; then \
+	    echo -e "\n*** Error: Build variable ISM_VERSION must be defined and not empty\n"; \
+	    exit 1; \
+	fi;
+	@ if [ -z "$(ISM_START_DATE)" ]; then \
+	    echo -e "\n*** Error: Build variable ISM_START_DATE must be defined and not empty\n"; \
+	    exit 1; \
+	fi;
+
+#
+# Create a release number for the ISM.
+#
+releasenumber:
+	@ relnum=`$(MKRELNUMF) $(ISM_START_DATE)`; \
+        echo "$$relnum" > $(_RELNUM_FILE); \
+        echo "Release $$relnum"
+
+#
+# Targets to build and remove the source tarball
+#
+tar:
+	@ echo "Ready to make tar"
+	@ echo SOURCES: "$(SOURCES)"
+	$(MAKEF) varcheck && $(MAKEF) tarclean
+	mkdir -p $(PKG_SOURCE_DIR)
+	$(_TAR_MAKERULE)
+	@ echo _TAR_LIST $(_TAR_LIST)
+	@ cat $(_TAR_LIST)
+	@ echo PWD: `pwd`
+	@ echo "-- Creating source tar file"; \
+	  cd $(PKG_ROOT); \
+	  ln -s $(ISM_TOP_DIR) $(PKG_NAME); \
+	  $(TAR) -czvf SOURCES/$(PKG_SOURCE_NAME) -T $(_TAR_LIST)
+
+tarclean:
+	@ echo "-- Removing source tarball"; \
+	$(RM) $(_TAR_LIST); \
+	$(RM) $(PKG_ROOT)/$(PKG_NAME); \
+	$(RM) -r $(PKG_SOURCE_DIR)
+
+#
+# Target to generate the RPM control file.
+#
+rpmrc: varcheck
+	@ echo "topdir: $(shell pwd)/$(PKG_ROOT)" > $(_RPMRC_FILE)
+	@ echo "buildroot: $(shell pwd)/$(PKG_BUILD_ROOT)" >> $(_RPMRC_FILE)
+
+#
+# Targets to build and remove the RPM packages
+#
+# If a target(s) needs to be built before the packaging
+# steps, define the macro DIST_PREP with the list of
+# targets to be built.
+#
+$(LOCALDIST)dist: $(DIST_PREP)
+	@ $(MAKEF) distclean && \
+	  $(MAKEF) tar && \
+	  $(MAKEF) releasenumber && \
+	  $(MAKEF) rpmrc
+	@ echo "-- Creating the RPM packages"
+	@ mkdir -p $(PKG_SPEC_DIR) $(PKG_BUILD_DIR) \
+		   $(PKG_RPM_DIR) $(PKG_SRPM_DIR) \
+		   $(PKG_BUILD_ROOT)
+	@ echo "---- Processing spec file"
+	@ $(MKSPECF) < $(SPEC) > $(PKG_SPEC_DIR)/$(PKG_SPEC_NAME)
+	@ echo "---- Running RPM"
+	@ echo "---- package name: $(PKG_RPM_NAME)"
+	$(PKG_CMD) $(PKG_SPEC_DIR)/$(PKG_SPEC_NAME)
+	@ $(CHKRPMF) "$(PKG_RPM_DIR)/$(PKG_RPM_NAME)"  $(PKG_BUILD_ROOT) $(PKG_ROOT)/missing
+
+# If any work on target(s) needs to be done before the copying
+# steps, define the macro COPY_PREP with the list of
+# targets to be built.
+#
+$(LOCALDIST)copy: $(COPY_PREP)
+	@ mkdir -p $(WORKAREA)/sgi-install/SGI/RPMS
+	@ echo "copy $(PKG_RPM_NAME) $(WORKAREA)/sgi-install/SGI/RPMS"
+	@ cp $(PKG_RPM_DIR)/$(PKG_RPM_NAME) $(WORKAREA)/sgi-install/SGI/RPMS/
+
+# If any work on target(s) needs to be done before the copying
+# steps, define the macro SOURCES_PREP with the list of
+# targets to be built.
+#
+$(LOCALDIST)sources: $(SOURCES_PREP)
+	@ mkdir -p $(WORKAREA)/sgi-install/SGI/SRPMS
+	@ echo "copy $(PKG_SRPM_NAME) $(WORKAREA)/sgi-install/SGI/SRPMS""
+	@ cp $(PKG_SRPM_DIR)/$(PKG_SRPM_NAME) $(WORKAREA)/sgi-install/SGI/RPMS"/
+
+distclean: tarclean
+	@ echo "-- Removing distribution directories"; \
+	$(RM) -r $(DIRT)
+	$(RM) -r $(PKG_ROOT)
+	$(RM) -fr $(XPROOT)/linux/images/$(PKG_RPM_NAME)
+	$(RM) -fr $(XPROOT)/linux/sources/$(PKG_SRPM_NAME)
+
+#
+# Clean up the distribution build
+#
+clean: distclean
+
+
+endif

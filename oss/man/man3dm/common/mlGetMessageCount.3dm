@@ -1,0 +1,69 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlGetMessageCount 3dm
+.SH NAME
+mlGetMessageCount: mlGetReceiveMessageCount, mlGetSendMessageCount \- get a message count
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlGetSendMessageCount(MLopenid openid, 
+              MLint32* messageCount);\f1
+.sp .8v
+\f3MLstatus mlGetReceiveMessageCount(MLopenid openid,
+              MLint32* messageCount);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media object.
+.TP
+\f2messageCount\f1
+resulting message count.
+.SH DESCRIPTION
+Returns a count of the number of messages in the send or receive
+queues of a device.
+The send queue contains messages queued by the
+application for processing by the device while the receive queue holds
+messages which have been processed and are waiting to be read by the
+application.
+A message is considered to reside in the send queue from
+the moment it is enqueued by the application until the moment the
+device begins processing it.
+A message resides in the receive queue
+from the moment the device enqueues it, until the moment the
+application dequeues the corresponding reply message (all messages in
+the receive queue are counted, regardless of whether or not they were
+successfully processed).
+The message counts are intended to aid load-balancing in sophisticated applications.
+They are not a reliable method for predicting UST/MSC pairs.
+.SH NOTE
+Some devices can begin processing one or more following messages
+before the first has been completed.
+Thus, the sum of the send and
+receive queue counts may be less than the difference between the
+number of messages which have enqueued and dequeued by the application.
+Note also that the time lag between a message being removed from the
+send queue, and the time at which it affects video pixels passing
+though a physical jack, is implementation dependent.
+The message
+counts are not a reliable method for timing or synchronizing
+media streams.
+.SH DIAGNOSTICS
+This function returns one of the following:
+.TP 6
+ML_STATUS_NO_ERROR
+The message count was obtained successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id is invalid.  The message count
+argument is not changed.
+.SH SEE ALSO
+mlClose(3dm),
+mlOpen(3dm),
+mlReceiveMessage(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

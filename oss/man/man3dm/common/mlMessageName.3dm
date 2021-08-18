@@ -1,0 +1,35 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlMessageName 3dm
+.SH NAME
+mlMessageName \- convert a ML message value to a text name
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3const char* mlMessageName(MLint32 messageType);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2message\fP
+the messageType resulting from a call to mlReceiveMessage.
+
+.SH DESCRIPTION
+
+Intended mainly as an aid in debugging, this call converts
+the integer ML message type value into a C string.
+
+The converted string is exactly the same as the message
+enum values.
+For example, the value ML_CONTROLS_FAILED,
+is converted to the string "ML_CONTROLS_FAILED"
+
+.SH DIAGNOSTICS
+This function returns a valid C string, or NULL if the status
+value is invalid.
+
+.SH SEE ALSO
+mlReceiveMessage(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

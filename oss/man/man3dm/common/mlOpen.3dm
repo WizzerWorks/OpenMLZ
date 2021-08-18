@@ -1,0 +1,126 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlOpen 3dm
+.SH NAME
+mlOpen \- opens a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlOpen(const MLint64 objectId,
+           MLpv* options, MLopenid* openid);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2objectId\f1
+the 64-bit unique identifier for the object (jack, path, or transcoder) to be opened.
+Obtain these identifiers by calling mlGetCapabilities.
+.TP
+\f2options\fP
+pointer to a list of optional parameters.
+May be NULL.
+Obtain these parameters by calling mlGetCapabilities.
+.TP
+\f2openid\fP
+resulting open device handle.
+Use this to refer to the open instance of this object.
+
+.SH DESCRIPTION
+Opens a digital media device with a desired initial configuration.
+The system will attempt to open the chosen device and immediately set each of the optional parameters.
+The open call will
+only succeed if the device could be opened and all listed options could be set successfully.
+
+The allowable entries for the options are listed below and may also be obtained by
+getting the OPEN_OPTION_IDS capability from the jack, path or xcode being opened.
+Through the use of mlPvGetCapabilities, the acceptable values for each of the following
+open options may also be obtained.
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+OPEN_MODE	INT32	Application's intended use for the
+		device
+		ML_MODE_RO for read-only access
+		ML_MODE_RWS for shared read/write
+		access
+		ML_MODE_RWE for exclusive access
+		Default is ML_MODE_RWS
+OPEN_SEND_QUEUE_COUNT	INT32	Application's preferred size (number
+		of messages) for the send queue.  This
+		influences the amount of memory
+		allocated for this queue when the
+		device is opened.
+		Default is device-dependent.
+OPEN_RECEIVE_QUEUE_COUNT	INT32	Applications' preferred size (number
+		of messages) for the receive queue.
+		This influences the amount of
+		memory allocated for this queue when
+		the device is opened.
+		Default is device-dependent
+OPEN_MESSAGE_PAYLOAD_SIZE	INT32	Application's preferred size (in bytes)
+		for the queue message payload area.
+		The payload area holds messages on
+		both the send and receive queues.
+		Default is device dependent.
+OPEN_EVENT_PAYLOAD_COUNT	INT32	Application's preferred size (number
+		of messages) for the queue event
+		payload area.  This payload area holds
+		the contents of event messages on the
+		receive queue.
+		Default is device dependent.
+OPEN_SEND_SIGNAL_COUNT	INT32	Application's preferred low-water
+		level (number of empty message slots)
+		in the send queue.  When the device
+		queues a message and causes the
+		number of empty slots to exceed this
+		level, then the device will signal the
+		send queue event.
+		Default is device-dependent.
+OPEN_XCODE_MODE	INT32	Application's preferred mode for
+		controlling a software transcoder.
+		Default is ML_XCODE_MODE_ASYNCHRONOUS.
+.TE
+.P
+The names of parameters in the table above have been abbreviated.
+For the tabled parameter name X with type TYPE, the unabbreviated name is ML_X_TYPE.
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The object was successfully opened.
+.TP
+ML_STATUS_OUT_OF_MEMORY
+There is insufficient memory to
+perform the operation
+.TP
+ML_STATUS_INVALID_ID
+The specified object id was invalid.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+One of the arguments to this call
+is invalid.
+.TP
+ML_STATUS_INVALID_PARAMETER
+At least one of the parameters in
+the options list is invalid.
+.TP
+ML_STATUS_INVALID_VALUE
+A parameter whose value was invalid
+was specified in the options list
+.TP
+ML_STATUS_INSUFFICIENT_RESOURCES
+The path could not be opened - a
+required resource is already in use
+by this or another application.
+
+.SH SEE ALSO
+mlClose(3dm),
+mlGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

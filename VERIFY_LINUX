@@ -1,0 +1,40 @@
+#! /bin/sh
+# This script is for linux OpenML ML sample implementation build/verify only
+#
+#
+
+    echo -e "\nThis script will verify ML module build by invoking"
+    echo -e "the mlquery utility."
+    echo -e "You may need root privilege to run this script."
+
+# set the environment variables
+    . ./BUILD_LINUX -n
+
+# check if v4l device needs to be loaded
+    echo -e "\nDo you have a bttv video4linux device and would like it"
+    echo -en "installed in the kernel now? (y/n)[n]"
+    read yesno
+
+    case $yesno in
+	[yY]*) /sbin/modprobe bttv;;
+    esac
+
+# run mlquery
+    export ROOT=$DIST_ROOT
+    export _MLMODULE_ROOT=$DIST_ROOT
+    echo -e  "Press return to test if mlquery can recognize any"
+    echo -en "of the ML devices: "
+    read yesno
+    echo
+    mlquery
+    unset ROOT
+    echo -e "\n*** Verification finished."
+
+# display info for installation steps
+    echo -e "\nTo install the ML components on your running system, use:"
+    echo -e "> su"
+    echo -e "# . ./BUILD_LINUX -n"
+    echo -e "# make DIST_ROOT=/ install"
+
+# fini
+# ===

@@ -1,0 +1,76 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH ddInterrogate 3dm
+.SH NAME
+ddInterrogate \- entry-point into ML device-dependent module.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml_didd.h>\f1
+.sp .8v
+\f3MLstatus ddInterrogate(MLIsystemContext system, 
+			MLImoduleContext module);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2system\f1
+Opaque structure used by the DI layer to store information
+related to this particular system.
+.TP
+\f2module\fP
+Opaque structure used by the DI layer to store information
+related to this particular module.
+
+.SH DESCRIPTION
+
+This routine is the first entry-point in every device-dependent
+module.  It is expected that this routine should interrogate
+hardware on the system and then make a series of "call backs" that
+serve to register all the capabilities that your module intends to 
+expose through the ML public API.
+
+To register the capabilities of each physical device, make use of
+the callback function:  \f3mlDINewPhysicalDevice\f1(3dm).
+
+\f3ddInterrogate\f1(3dm) is passed two arguments. Both are opaque
+references constructed by the ML which it uses to manage the
+operation of this driver, its devices, and their capabilities. The
+opaque references given to \f3ddInterrogate\f1(3dm) should be passed in
+the call to \f3mlDINewPhysicalDevice\f1(3dm) without change.
+
+The ML requires that \f3ddInterrogate\f1(3dm) register information
+that is independent of any process address space.  Your
+\f3ddInterrogate\f1(3dm) function may only be called once, but the
+information it provides may be available to many different processes
+running at many different times. The ML device-independent layer
+coordinates this scheme, it is otherwise transparent to your
+driver.
+
+\f3ddInterrogate\f1(3dm) must only register capabilities of the
+digital media device(s) it supports. It should not reserve or allocate
+resources. Those activities occur when \f3ddConnect\f1(3dm) is called.
+
+In some implementations, \f3ddInterrogate\f1(3dm) may be called more
+than once.  On each call, your module should expose all the devices it
+supports at that instant (by calling
+\f3mlDINewPhysicalDevice\f1(3dm)).
+
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The object was successfully opened.
+.TP
+ML_STATUS_OUT_OF_MEMORY
+There is insufficient memory to
+perform the operation
+
+.SH SEE ALSO
+mlDIIntro(3dm),
+ddConnect(3dm),
+mlDINew(3dm).
+
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

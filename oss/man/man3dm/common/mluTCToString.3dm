@@ -1,0 +1,153 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluTCToString 3dm "\*(PR" "\*(BN"
+.SH NAME
+mluTCToString, mluTCFromString, MLUtimecode, tc_type \- digital media timecode mathematics
+.SH SYNOPSIS
+.nf
+#include <ML/mlu.h>
+.sp .8v
+\f3MLstatus mluTCToString\f1
+\f3    ( char * outstring,\f1
+\f3      const MLUtimecode *tc )\f1
+.sp .8v
+\f3MLstatus mluTCFromString\f1
+\f3    ( MLUtimecode * result,\f1
+\f3      const char * instring, \f1
+\f3      int tc_type )\f1
+.sp .8v
+.sp .8v
+.fi
+.SH TYPES
+.TP 16
+\f2MLUtimecode\fP
+A structure containing a representation of SMPTE time code on which
+certain mathematical and utility functions can be performed.
+Can be
+used with:
+\f3mluTCAddTC(3dm)\fP, \f3mluTCAddFrames(3dm)\fP,
+\f3mluTCToString(3dm)\fP, \f3mluTCFromSeconds(3dm)\fP,
+\f3mluTCToSeconds(3dm)\fP, \f3mluTCFromString(3dm)\fP,
+\f3mluTCFramesPerDay(3dm)\fP, and \f3mluTCFramesBetween(3dm)\fP.
+
+.SH ARGUMENTS
+.TP 16
+\f2outstring\fP
+The string created by converting \f2tc\fP.
+
+.TP
+\f2tc\fP
+The timecode operand to convert to a string.
+
+.TP
+\f2result\fP
+The result of converting \f2instring\fP to a \f3MLUtimecode\fP.
+
+.TP
+\f2instring\fP
+The string to convert into a \f3MLUtimecode\fP.
+
+.TP
+
+\f2tc_type\fP
+
+The timecode type which \f3mluTCFromString\fP should assume the string
+is in.
+See TC_TYPE below.
+
+.SH DESCRIPTION
+
+These utility functions will convert between strings and \f3MLUtimecode\fP's.
+
+To convert from a string to a \f3MLUtimecode\fP, the string format must
+a colon-separated string (in the form "h:m:s:f"); if fields are
+missing (i\.e\., "01:01:04") the string will be interpreted by assuming
+that the missing fields are on the left, and are "0".
+Thus, for
+example, the string "2:14" will be interpreted as "0:0:2:14."
+
+When converting from a \f3MLUtimecode\fP to a string, the string
+returned will be fully justified and contain all fields.
+(i\.e\., it will
+return a fully-justified "00:00:02:14").
+
+.SH TC_TYPE
+
+The mluTC routines, depend on a proper setting of the tc_type field.
+Often this tc_type field appears as a member of a MLUtimecode passed
+to or from one of these routines.
+
+The tc_type field tells these routines whether the maximum frame
+value is 25 or 30, whether 30 frame code is drop frame or not,
+and if so what kind of drop frame.
+
+The tc_type field, defined in <mlutimecode.h> (which is included by
+<mlu.h>), consists of an or'ed together bitmask of fields indicating
+format (MLU_TC_FORMAT_...), timecode rate (MLU_TC_RATE_...), and
+dropframe status (MLU_TC_*DROP*), but most users will find it much
+easier just to use one of the pre-constructed, fully-qualified tokens:
+
+.nf
+  MLU_TC_30_ND - non-drop-frame NTSC or M/PAL timecode
+  MLU_TC_2997_4FIELD_DROP - drop-frame NTSC timecode
+  MLU_TC_2997_8FIELD_DROP - drop-frame M/PAL timecode
+  MLU_TC_25_ND - PAL timecode (not M/PAL)
+  MLU_TC_24_ND - 24 frame per second film timecode
+  MLU_TC_60_ND - non-drop-frame 60 frame per second HDTV
+                timecode (experiemental)
+  MLU_TC_5594_8FIELD_DROP - drop-frame 59.94 frame per second
+                           HDTV timecode (experiemental)
+.fi
+
+The most common tokens for US use are MLU_TC_24_ND,
+MLU_TC_2997_4FIELD_DROP and MLU_TC_30_ND.
+In Europe, MLU_TC_24_ND and
+MLU_TC_25_ND will be the most commonly used tokens.
+"NTSC" and "PAL"
+above really refer to any 525/60 signal and 625/50 signal,
+respectively.
+
+Note on rates: the MLU_TC_RATE field within tc_type does not refer to
+the video signal's rate.
+It simply refers to whether "30 frame"
+timecode is drop frame or not.
+Non-drop frame code has exactly 30
+frames per second, drop-frame code has exactly 29.97 frames per second
+over the full day.
+The actual video signal rate is neither requested
+nor required by mluTC and other timecode routines.
+For color NTSC and
+M/PAL signals, it happens to be 30000/1001 frames per second, which
+equals neither 30 nor 29.97.
+
+Because of this, any mluTC routines (such as \f3mluTCToSeconds\fP) which
+go between a timecode value and real time will assume a timecode
+rate as given by MLU_TC_RATE, \f3not\fP as given by the actual
+video signal's frame rate.
+This means that over the long term,
+drop frame timecode will drift away from real time at the rate
+of about 2 frames per day.
+
+.SH RETURN VALUE
+
+If a \f3MLUtimecode\fP operand (\f2tc\fP) contains an illegal timecode
+value (e\.g\., a negative entry, invalid frame number, etc.),
+\f3mluTCToString\fP will return ML_STATUS_INVALID_ARGUMENT, and the contents of
+\f2outstring\fP will be undefined.
+
+If \f3mluTCFromString\fP is unable to interpret an input string
+\f2instring\fP, it will return ML_STATUS_INVALID_ARGUMENT, and the contents of
+\f2result\fP will be undefined.
+
+.SH SEE ALSO
+mluTCAddFrames(3dm),
+mluTCAddTC(3dm),
+mluTCFramesBetween(3dm),
+mluTCFramesPerDay(3dm),
+mluTCFromSeconds(3dm),
+mluTCToSeconds(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

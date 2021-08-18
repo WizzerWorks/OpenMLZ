@@ -1,0 +1,42 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlGetSystemUST 3dm
+.SH NAME
+mlGetSystemUST \- get the current UST on a particular system
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlGetSystemUST(MLint64 systemId, MLint64* ust);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2systemId\f1
+the 64-bit id number for the system from which you desire UST.
+.TP
+\f2ust\fP
+pointer to int64 to hold the resulting UST value.
+
+.SH DESCRIPTION
+
+Use to obtain the current UST (Universal System Time) on a particular system.
+At this time, the only legal system id is ML_SYSTEM_LOCALHOST.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The system UST was obtained successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified system id was invalid.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+The UST was not returned successfully (perhaps an invalid pointer?).
+
+.SH SEE ALSO
+mlIntro(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,264 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#***************************************************************************
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#***************************************************************************
+#
+# commonrules - Common build rules.
+#
+# See the man page sgibuild(7) for information on the use of this file
+# and its role in the SGI build environment.
+#
+#***************************************************************************
+
+ifndef _COMMONRULES_INCLUDED_
+_COMMONRULES_INCLUDED_ = 1
+
+
+ifdef SUBDIRS
+LOCALPREF = local_
+endif
+ifdef VERSIONS
+LOCALPREF = local_
+endif
+ifdef NEED_LOCAL_TARGETS
+LOCALPREF = local_
+endif
+
+#
+# Define the common targets as never resolved
+#
+ifdef LOCALPREF
+.PHONY: $(COMMONTARGS) $(PREFTARGS) $(SUBDIRS) $(VERSIONS) all
+else
+.PHONY: $(COMMONTARGS) $(SUBDIRS) $(VERSIONS) all
+endif
+
+#
+# If a Makefile that cascades down to subdirectories or versions
+# also needs to build in the current directory, it must define
+# NEED_LOCAL_TARGETS = 1 and create the standard targets of the form
+# $(LOCALPREF)<target>.
+#
+ifdef NEED_LOCAL_TARGETS
+all: $(LOCALPREF)all
+clobber: $(LOCALPREF)clean
+clean: $(LOCALPREF)clean
+install: $(LOCALPREF)install
+endif
+
+#
+# Never blow away subdirs if stop make
+#
+ifdef SUBDIRS
+.PRECIOUS: $(SUBDIRS)
+endif
+
+ifdef VERSIONS
+.PRECIOUS: $(VERSIONS)
+endif
+
+#
+# Add some common suffixes and rules
+#
+.SUFFIXES: .pl .po .mo .cxx .cpp .c++
+
+#
+# If SUBDIRS or VERSIONS is defined, each subdirectory should be a
+# pseudotarget.
+#
+ifdef SUBDIRS
+$(SUBDIRS):
+	$(SUBDIR_MAKERULE)
+endif
+
+ifdef VERSIONS
+$(VERSIONS):
+	$(VERSION_MAKERULE)
+endif
+
+#
+# Common build targets
+#
+$(LOCALPREF)clobber: $(LOCALPREF)clean
+
+$(LOCALPREF)clean:
+ifneq ($(strip $(DIRT)),)
+	$(RM) -r $(DIRT)
+endif
+ifneq ($(strip $(TARGETS)),)
+	$(RM) -r $(TARGETS)
+endif
+
+#
+# Rule for C++ files
+#
+%.o: %.cxx
+	$(CXXF) -c $<
+
+%.o: %.cpp
+	$(CXXF) -c $<
+
+%.o: %.c++
+	$(CXXF) -c $<
+
+#
+# Rule for linking files. Make sure we invoke the linker
+# appropriately for the language.
+#
+_COMPILER = $(CCF)
+ifdef CXXFILES
+_COMPILER = $(CXXF)
+endif
+
+%: %.o
+	$(_COMPILER) $(LDFLAGS) $< -o $@
+
+#
+# Support for building DSOs.
+#
+ifdef DSO_TARGET_BASENAME
+GDIRT += $(DSO_DIRT)
+GCXXOPTS += $(DSO_COPTS)
+GCOPTS += $(DSO_COPTS)
+GLDOPTS += $(DSO_LDOPTS)
+
+
+$(DSO_FULL_NAME): $(OBJECTS)
+	$(_COMPILER) $(LDFLAGS) -o $@ $(OBJECTS)
+
+$(SONAME): $(DSO_FULL_NAME)
+	ln -sf $(DSO_FULL_NAME) $(SONAME)
+
+$(DSO_TARGET): $(SONAME) $(DSO_FULL_NAME)
+	ln -sf $(DSO_FULL_NAME) $(DSO_TARGET)
+endif
+
+#
+# I18n support
+#
+
+#	Implicit rule for building .mo files from .po files.
+%.mo: %.po
+	@ echo "Creating $@"; \
+	$(MSGFMTF) --output-file=$@ $<
+
+#	Message catalog .pot file support.
+#
+#	Only defined if the MSGCAT_NAME macro is defined in the
+#	including Makefile.
+ifdef MSGCAT_NAME
+
+ICXXDEFS += -DI18N_LOCALEDIR="\"$(I18N_LOCALEDIR)\"" \
+	    -DMSGCAT_NAME="\"$(MSGCAT_NAME)\""
+ICDEFS   += -DI18N_LOCALEDIR="\"$(I18N_LOCALEDIR)\"" \
+	    -DMSGCAT_NAME="\"$(MSGCAT_NAME)\""
+
+GDIRT    += $(MSGCAT_PATHNAME) $(MSGCAT_PATHNAME).tmp
+
+
+#	Rule to build the .pot plain text message catalog file
+$(MSGCAT_PATHNAME): $(MSGCAT_FILES)
+	$(XGETTEXTF) $(MSGCAT_FILES)
+	@ if [ -e $@ ]; then \
+	    sed -e 's/PACKAGE VERSION/$(ISM_NAME) $(ISM_VERSION)/' \
+		-e 's/# SOME DESCRIPTIVE TITLE./# Message Catalog for $(MSGCAT_NAME)/' \
+		-e 's/YEAR Free/$(shell date +%Y) Free/' \
+		-e 's/# FIRST AUTHOR.*/#/' \
+		$@ > $@.tmp; \
+	    mv -f $@.tmp $@; \
+	fi;
+
+#	Build the .pot file from the 'all' target by default
+ifndef MSGCAT_SUSPEND
+$(MSGCAT_ALL): $(MSGCAT_PATHNAME)
+endif
+
+endif
+
+#
+# Perl support
+#
+%: %.pl
+	cat $< > $@
+	chmod a+x $@
+
+#
+# This target takes the source files specified by the SOURCES macro
+# and lists them in a file for later use by tar when packaging the
+# source files.
+#
+# Note that when using VPATH to find our files, we must strip any .. out of pathname.
+# tar-1.12.17-3, which ships with redhat 6.2, is broken.  If you add a file with ..
+# in the name, tar fails with an error trying to extract it.  Sigh.
+#
+#@ VPATH_ITEMS=$(shell echo "$(VPATH)" | awk -F: '{i=1; while ($$i!="") {i++;}; print i}');
+ifdef _TAR_LIST
+tar-list:
+	@ echo "tar-list";
+	@ if test "$(SOURCES)" != ""; then \
+		for f in $(SOURCES); \
+		do \
+			if test -e $$f; then \
+				echo "$(ISM_NAME)-$(ISM_VERSION)/$(_SUBDIR_PATH)$$f" \
+				>> $(_TAR_LIST); \
+			else \
+			VPATH_ITEMS=`echo "$(VPATH)" | awk -F: '{i=1; while ($$i!="") {printf "%s ", $$i;i++;}}'`; \
+			for vpath in $$VPATH_ITEMS; \
+			do \
+				if test -e $(ISM_TOP_DIR)/$(_SUBDIR_PATH)$$vpath/$$f; then \
+				        dir=`(cd $(ISM_TOP_DIR)/$(_SUBDIR_PATH)$$vpath \
+                                            && pwd | sed -e 's?$(ISM_TOP_DIR)/??')`;\
+					echo "$(ISM_NAME)-$(ISM_VERSION)/$$dir/$$f" \
+					>> $(_TAR_LIST);\
+				fi \
+			done \
+			fi \
+		done \
+	fi
+
+	$(SUBDIRS_MAKERULE)
+endif
+
+#
+# Include the generated dependencies file
+#
+-include $(DEPENDS)
+
+
+endif

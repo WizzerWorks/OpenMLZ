@@ -1,0 +1,58 @@
+#
+# Rules for the Microsoft Visual Studio Compiler suite
+#
+
+#
+# This is actually a def, not a rule. But it couldn't be defined in
+# msvcdefs because it needs to test a variable which only gets defined
+# in the GNUmakefile, *after* msvcdefs is read.
+#
+# Add the /MD switch when compiling DLLs, otherwise add /MT
+# Note that by doing this in this way (ie: by testing for a DLL target),
+# we prevent a single GNUmakefile from defining both a DLL and an EXE
+# target.
+#
+
+ifdef DSO_TARGET_BASENAME
+CFLAGS += /MD
+XDIRT += $(DSO_TARGET:.$(DSO_SUFFIX)=.exp)
+XDIRT += $(DSO_TARGET:.$(DSO_SUFFIX)=.ilk)
+XDIRT += $(DSO_TARGET:.$(DSO_SUFFIX)=.pdb)
+_LINKER += /VERSION:$(DSO_MAJOR_VERSION).$(DSO_MINOR_VERSION)
+else
+CFLAGS += /MT
+endif
+
+
+ifdef USE_MAKEDEPEND
+
+#
+# Rule for Dependency files from C source
+#
+# These dependency files do not seem to work very well yet, so by
+# default dependency-generation is disabled. Enable it by setting the
+# USE_MAKEDEPEND env var.
+#
+
+#
+# Note: it is necessary to re-formulate the include paths, since makedepend
+# uses the "standard" notation (with "-I") rather than the MSVC notation
+# (/I).
+#
+# It is also necessary to repeat all macro definitions (rather than re-use
+# $(CFLAGS) for instance), for the same reason ("-D" vs. "/D"). Note also
+# that the pre-processor in makedepend doesn't seem to be 100% correct; in
+# particular it doesn't seem to properly parse the macro definition for
+# ML_OS_NT (which is in mltypes.h). To work around this problem, we
+# define the macro on the command-line -- this is why there are actually
+# *more* macros defined here than on the actual compilation command-line.
+#
+CINCS_MAKEDEPEND = $(foreach path, $(CINCS_NO_DASH_I), -I$(path))
+
+%.d: %.c
+	touch $@
+	makedepend -f $@ -- -Y -D_M_IX86 -D_WIN32 -DWIN32 -DML_OS_NT -DDEBUG \
+		$(CINCS_MAKEDEPEND) -I"$(MSVC_INC_PATH)" -- $<
+	rm $@.bak
+
+endif

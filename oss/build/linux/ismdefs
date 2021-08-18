@@ -1,0 +1,160 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#*************************************************************************** 
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#*************************************************************************** 
+#
+# ismdefs
+#
+# This file is part of the SGI Build Environment, sgibuild(7), and
+# contains ISM specific macros and information. Every ISM should
+# have an ismdefs and ismrules file in its top level directory. Every
+# Makefile in the ISM should start with the following lines:
+#
+#	#! gmake
+#	ISM_DEPTH = ../.. [as needed to cd to top of ISM]
+#	include $(ISM_DEPTH)/ismdefs
+#
+# Anywhere AFTER the first target is defined, either the ismrules or
+# ismcommonrules file must be included. The ISM top level Makefile
+# must include the ismcommonrules file using the $(ISMCOMMONRULES)
+# macro. Non-top level Makefiles must include the ismrules file using
+# the $(ISMRULES) macro.
+#
+# Certain macros must be defined in the ismdefs files. You may define
+# any additional macros and include any other files that are specific
+# to the ISM.
+#
+#*************************************************************************** 
+
+#
+# Sanity-checking
+#
+ifneq ($(PLATFORM),linux)
+dummy := $(error Should not include linux ismdefs on platform $(PLATFORM))
+endif
+
+#
+# Local definitions and overrides
+#
+
+# ISM_TOP_DIR points to the top of the package directory
+# It needs to be modified!
+#
+ISM_TOP_DIR=$(XPROOT)/oss
+
+ISM_INCLUDE_DIR=/usr/include/ML
+
+
+#
+# Get the definitions shared by all platforms
+#
+include $(XPROOT)/oss/build/common/ismdefs
+
+#
+# Define anything else that is platform-specific and project-wide...
+#
+
+# Spec file macros
+#
+# It is often useful to define directories and other information
+# in the RPM spec file ($(ISM_DEPTH)/build/spec) using macros
+# instead of hard coding. To make macro available to the spec
+# file, define LSPECVARS using the following syntax:
+#
+# LSPECVARS = macro_name=value macro_name=value ...
+#
+# The ISM_NAME and ISM_VERSION macros are automatically defined
+# for use in the spec file and should not be added to LSPECVARS.
+#
+LSPECVARS = \
+	ISM_INCLUDE_DIR=$(ISM_INCLUDE_DIR) \
+	ISM_LIBRARY_DIR=$(ISM_LIBRARY_DIR) \
+	ISM_BIN_DIR=$(ISM_BIN_DIR) \
+	ISM_MLMODULE_DIR=$(ISM_MLMODULE_DIR) \
+	ISM_RELNOTES_DIR=$(ISM_RELNOTES_DIR) 
+
+# Required inclusion
+#
+# The top level Makefile must include ismcommondefs whereas all
+# other Makefiles must include commondefs. The $(ISM_DEPTH)
+# macro, defined by each Makefile, is used to identify the
+# top level Makefile.
+#
+# variables that override ismcommondefs settings
+# PKG_ROOT - default to linux/dist
+PKG_ROOT  = build/linux/dist
+
+ifeq ($(ISM_DEPTH),./build/linux)
+include $(XPROOT)/oss/make/linux/ismcommondefs
+else
+include $(XPROOT)/oss/make/linux/commondefs
+endif
+
+#
+# Reserve 'Makefile' for use by IRIX, on Linux GNU make groks 'GNUmakefile'
+# (and will choose to use it ahead of 'makefile' or 'Makefile'.
+#   
+# overriding the common settings!
+# MKFILE - default Makefile
+MKFILE 	= GNUmakefile
+# SPEC - default linux/build/spec
+SPEC 	= build/linux/build/spec
+
+ICDEFS = -DDEBUG
+ICOPTS = -g
+ICXXDEFS = -DDEBUG
+ICXXOPTS = -g
+
+INSTALL_MLMODULE     = \
+	$(INSTALL) -d $(DIST_ROOT)/usr/lib/mlmodule; \
+	$(INSTALL) $(DSO_INSTALLOPTS) \
+		-m 755 $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlmodule; \
+	ln -sf $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlmodule/$(SONAME); \
+	ln -sf $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlmodule/$(DSO_TARGET)
+
+# -nostdlib option was added to GNU ld on 11-01-2001
+# binutils 2.12 (03-08-2002) appears to be the first supported release
+LD_NOSTDLIB := $(shell $(LD) -v | perl -e 'while (<>) {       \
+        if (/(\d+)\.(\d+)/) {                                 \
+            (($$1 > 2) || ($$1 == 2 && $$2 > 11)) ?           \
+                print "1" : print "0";                        \
+            last;                                             \
+        }                                                     \
+    }')
+

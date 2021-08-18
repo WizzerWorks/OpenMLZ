@@ -1,0 +1,126 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+
+.TH mluImageBufferSize 3dm
+.SH NAME
+mluImageBufferSize: mluGetImageBufferSize, mluComputeImageBufferSize \- calculate a memory buffer size based on the image parameters
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+\f3#include <ML/mlu.h>\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluGetImageBufferSize(MLopenid openPathOrPipe, MLint32* bufferSize);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluComputeImageBufferSize(MLpv* imageParams, MLint32* bufferSize);\f1
+.sp .8v
+.fi
+.SH PARAMETER
+.TP 16
+\f2openPathOrPipe\f1
+An open device handle.
+.TP
+\f2imageParams\f1
+A list of parameters describing the image format.
+.TP
+\f2bufferSize\f1
+The computed size of the image buffer.
+
+.SH DESCRIPTION
+
+Use mluGetImageBufferSize to obtain the size of a memory buffer required to store
+an image defined by the controls of open path or pipe, \f2openPathOrPipe\fP.
+
+Use mluComputeImageBufferSize to obtain the size of a memory buffer required to store
+an image defined by the \f2imageParams\fP.
+The function expects \f2imageParams\fP
+to contain values for the following image parameters:
+
+        ML_IMAGE_CODING_INT32,
+        ML_IMAGE_HEIGHT_INT32,
+        ML_IMAGE_WIDTH_INT32,
+        ML_IMAGE_COLORSPACE_INT32,
+        ML_IMAGE_PACKING_INT32,
+        ML_IMAGE_SAMPLING_INT32,
+        ML_IMAGE_INTERLEAVE_MODE_INT32,
+        ML_IMAGE_SKIP_ROWS_INT32,
+        ML_IMAGE_SKIP_PIXELS_INT32,
+        ML_IMAGE_ROW_BYTES_INT32
+
+The MLpv list must consist of all the parameters.
+If any parameter is omitted,
+ML_INVALID_PARAMETER is returned upon exit.
+
+.SH NOTES
+If ML_IMAGE_INTERLEAVE_MODE_INT32 parameter is set to ML_INTERLEAVE_MODE_SINGLE_FIELD, both functions return the size of a memory buffer required to store larger of two fields.
+
+If ML_IMAGE_CODING_INT32 parameter indicates compression scheme, both functions will try to calculate the worse case scenario buffer size required for a given compression type.
+.SH EXAMPLE
+
+The example demonstrates use of mluComputeImageBufferSize function.
+.PP
+.nf
+.ft 4
+
+MLint32 buffSize;
+MLpv pv[12];
+
+pv[0].param = ML_IMAGE_CODING_INT32;
+pv[0].param = ML_CODING_UNCOMPRESSED;
+pv[1].param = ML_IMAGE_COLORSPACE_INT32;
+pv[1].value.int32 = a_colorspace[c];
+pv[2].param = ML_IMAGE_PACKING_INT32;
+pv[2].value.int32 = a_packing[p];
+pv[3].param = ML_IMAGE_SAMPLING_INT32;
+pv[3].value.int32 = a_sampling[s];
+pv[4].param = ML_IMAGE_WIDTH_INT32;
+pv[4].value.int32 = width;
+pv[5].param = ML_IMAGE_HEIGHT_1_INT32;
+pv[5].value.int32 = height_f1;
+pv[6].param = ML_IMAGE_HEIGHT_2_INT32;
+pv[6].value.int32 = height_f2;
+pv[7].param = ML_IMAGE_INTERLEAVE_MODE_INT32;
+pv[7].value.int32 = ML_INTERLEAVE_MODE_INTERLEAVED;
+pv[8].param = ML_IMAGE_SKIP_ROWS_INT32;
+pv[8].value.int32 = 0;
+pv[9].param = ML_IMAGE_SKIP_PIXELS_INT32;
+pv[9].value.int32 = 0;
+pv[10].param = ML_IMAGE_ROW_BYTES_INT32;
+pv[10].value.int32 = 0;
+pv[11].param = ML_END;
+
+if (mluComputeImageBufferSize(pv, &buffSize) != ML_STATUS_NO_ERROR) {
+	fprintf(stderr, "mluComputeImageBufferSize failed\n");
+	return -1;
+}
+
+.ft 1
+.fi
+.P
+
+.SH DIAGNOSTICS
+The functions return one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The function returned the requested result.
+.TP
+ML_STATUS_INVALID_VALUE	
+One of the passed parameters had a wrong value.
+.TP
+ML_STATUS_INVALID_PARAMETER
+Not enough parameters were included in MLpv list, or the device does not support one of the required controls.
+.TP
+ML_STATUS_INVALID_ID
+The openPathOrPipe handle was invalid.
+.TP
+
+.SH SEE ALSO
+mlOpen(3dm),
+mlIntro(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

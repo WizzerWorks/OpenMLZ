@@ -1,0 +1,380 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlIntro 3dm
+.SH NAME
+mlIntro \- Introduction to OpenML
+.SH DISCUSSION
+
+This man page provides an introduction to OpenML.  The ML provides a
+low-level library for controlling digital media hardware.
+
+.SH MESSAGES AND COMMUNICATION
+
+The fundamental unit of communication between application and device
+is the message.
+Messages are composed of parameters.
+Those
+parameters may define control values (the frame rate, or the size of
+an image) or they may describe the location of data
+(perhaps a single audio or video frame, or some VITC data).
+
+.SH PARAMETERS
+
+All digital media parameters (MLpv's) have an identical structure, containing four items:
+.TP 6
+param
+A unique numeric tag describing the parameter.
+An example is
+ML_IMAGE_WIDTH_INT32.
+Bits within the name indicate the type and size of the
+parameter (including which member of the value union to use).
+.TP
+value
+The value of that named parameter.
+This is a union of several basic types, including 64-bit integers, 32-bit integers and pointers.
+.TP
+length
+The number of valid elements in the value, ignored when setting the value of a
+scalar.
+.TP
+maxLength
+The maximum number of elements in the value array.
+Ignored for scalars.
+
+.P
+Every piece of information in the ML API is represented in the
+same, consistent, manner.
+Every message is constructed from MLpvs,
+every audio and video buffer is described using MLpvs,
+every control parameter is a MLpv and the open options are MLpvs.
+In defining parameters, some care has been taken to ensure
+they may be efficiently processed in hardware.
+Fortunately, this also
+allows them to be efficiently processed in software.
+
+.SH TERMINOLOGY
+
+The SDK is concerned with three types of interfaces:
+Jack connections for control purposes,
+Paths for audio and/or video data through jacks in/out of the machine and
+Pipes to/from transcoders.
+All share common control mechanisms and Paths and Transcoders share buffer,
+and queueing mechanisms.  (See OPENING A LOGICAL JACK below for the
+differences between jacks and paths/transcoders).
+
+.SH OPENING A LOGICAL PATH
+
+Before sending messages to a device you'll need to open a connection
+to some processing path through it by calling \f4mlOpen\f1(3dm):
+
+.nf
+.RS .5i
+.ne 2
+MLstatus mlOpen (MLint64 pathId, MLpv* options,
+                     MLopenid* openid);
+.RE
+.fi
+
+Think of a path as being a logical device - a single physical device
+(e.g.
+a PCI card) may simultaneously support several logical paths.
+A side effect of opening a path is the allocation of space for queues of
+messages from your application to the device and replies from the
+device back to your application.
+All of the messages sent to a queue
+share a common payload area and are required to observe a strictly
+ordered relationship.
+If message A is sent before message B, then the
+reply to A must arrive before the reply to B.
+
+.SH CONSTRUCTING A MESSAGE
+
+Messages are just arrays of parameters (where the last parameter is
+always ML_END).
+For example, to set the image width to be 720 and the
+height to be 480 we construct a message:
+
+.nf
+.RS .5i
+.ne 6
+MLpv message[3];
+message[0].param = ML_IMAGE_WIDTH_INT32;
+message[0].value.int32 = 720;
+message[1].param = ML_IMAGE_HEIGHT_INT32;
+message[1].value.int32 = 480;
+message[2].param = ML_END
+.RE
+.fi
+
+.SH PROCESSING OUT OF BAND MESSAGES
+
+There will be cases where an application wishes to immediately
+influence a device without waiting for all previously enqueued
+messages to be processed.
+Borrowing a term from unix sockets, we term
+these cases "Out of band" messages.
+They are performed with the
+\f4mlSetControls\f1(3dm), or \f4mlGetControls\f1(3dm) calls: Here's an example to
+immediately getting the image width and height.
+
+.nf
+.RS .5i
+.ne 6
+MLpv message[3];
+message[0].param = ML_IMAGE_WIDTH_INT32;
+message[1].param = ML_IMAGE_HEIGHT_INT32;
+message[2].param = ML_END
+if( mlGetControls( somePath, message))
+   handleError();
+else
+  printf("Image size is %d x %d\\n",
+          message[0].value.int32,
+          message[1].value.int32);
+.RE
+.fi
+
+Out-of-band messages work well for simple sets and queries.
+They are
+blocking calls.
+If the call succeeds, you're guaranteed the message
+has been successfully processed.
+
+.SH SENDING IN-BAND MESSAGES
+
+Out-of-band messages are appropriate for simple control changes, but
+they provide no buffering between your application and the device.
+For most applications, processing real-time data will require using a
+queuing communication model.
+The ML supports this with the
+\f4mlSendControls\f1(3dm), \f4mlSendBuffers\f1(3dm) and
+\f4mlReceiveMessage\f1(3dm) calls.
+
+For example, to send a controls message to a device input queue use:
+
+.nf
+.RS .5i
+MLstatus mlSendControls( MLopenid openId, MLpv* message);
+.RE
+.fi
+
+Each device interprets messages in the order in which they are
+enqueued.
+Thus, the temporal relationship between, for example, video
+buffers and changes in video modes, is very explicit.
+Notice that the
+send call does not wait for the device to actually process the message,
+it just copies it to the device input queue and then returns.
+
+When your application sends a message, it is copied into the send
+queue.
+The message is split between a small fixed header on the input
+list and a larger variable-sized space in the data area.
+
+It is possible that there will not be enough space in the data area
+and/or send list for a new message.
+In that case you'll know from the
+return code that the message was not enqueued.
+Having a full input
+queue is generally not a problem, it is simply an indication that your
+application is capable of generating messages faster than the device
+can process them.
+
+For some devices, the system may take advantage of device-specific
+knowledge to optimize the messaging transactions.
+For example, when
+you call sendBuffers the system may copy the message exactly as
+described above, or it may send part or all of the message directly to
+the hardware.
+However, regardless of what the system actually does,
+it will always look to your application exactly as described here.
+
+Each message you send is guaranteed to result in at least one reply
+message from the device.
+This is how you will detect when your
+message was interpreted and what the result was.
+In the case of
+control parameters you'll want to check the return message to ensure
+your control was correctly executed.
+In the case of audio or video buffers,
+you'll typically allocate buffer space in your application and then
+send an indirect reference to that buffer in a message.
+Once your
+application receives a reply message you can be certain the device has
+completed your request and finished with the memory so you are free to
+reuse it.
+
+Some devices can send messages to advise your application of important
+events (for example some video devices can notify you of every
+vertical retrace).
+However, it is guaranteed that no such
+notification messages will be generated until you explicitly ask for
+them.
+
+.SH PROCESSING IN-BAND MESSAGES
+
+When the device processes each message it removes the message header
+from the send queue, writes any response into the data area and then
+places a reply header on the output list.
+(your application's receive
+queue).
+The reply is written into the same space which the original
+message held in the data area.
+Thus, in general, your application must
+allow space in the message for any reply you expect to be returned.
+Notice that the device does no allocation, it just uses the memory
+allocated as a side effect of your application enqueueing the input
+message.
+This is important because it guarantees there will never be
+any need for the device to block because it didn't have enough space
+for the reply.
+
+.SH PROCESSING EXCEPTIONAL EVENTS
+
+In some cases an exceptional event occurs which requires that the
+device pass a message back to your application.
+An example of such an
+event is "sync lost" or "vertical retrace occurred".
+Your application
+must explicitly ask for any such events.
+
+If you do ask for events, it is your application's responsibility to
+read its receive queue frequently enough to prevent the device running
+out of space for messages which you have asked it to enqueue.
+If the
+queue starts to fill up, then the device will enqueue an event message
+advising that it is stopping notification of exceptional events.
+
+Remember that the device never needs to allocate space in the data
+area for reply messages and that it will automatically stop sending
+notifications of events if the output list starts to fill up.
+Space
+is reserved in the receive queue for a reply to every message your
+application enqueues.
+If there is insufficient space, then any attempt
+to send new messages will fail.
+
+.SH RECEIVING IN-BAND REPLY MESSAGES
+
+To receive a reply message from a device use
+\f4mlReceiveMessage\f1(3dm):
+
+.nf
+.RS .5i
+.ne 3
+MLstatus mlReceiveMessage(MLopenid openId,
+                          MLint32* messageType,
+                          MLpv** reply);
+.RE
+.fi
+
+This call returns the oldest un-read message sent from the device back
+to your application.
+The messageType parameter indicates why this
+reply was generated.
+It could come from a call to sendControls,
+sendBuffers, or it could have been generated spontaneously by the
+device as the result of an event.
+The reply pointer is guaranteed to
+remain valid until you attempt to receive a subsequent message.
+This
+allows a small optimization \- you can read the current message "in
+place" without needing to first copy it off the queue.
+It is
+acceptable to overwrite a value in a reply message and then send that
+as a new message.
+
+.SH BEGINNING AND ENDING TRANSFERS
+
+On video paths, messages containing buffers are treated in a special
+way.
+The very first call to sendBuffers will cause the device input
+queue to stall.
+That message, and subsequent messages, will not be
+processed until your application issues a \f4mlBeginTransfer\f1(3dm)
+call:
+
+.nf
+.RS .5i
+MLstatus mlBeginTransfer( MLopenid openId);
+.RE
+.fi
+
+This call frees the device to begin processing messages containing
+buffers.
+It also commands the device to begin generating exceptional
+events.
+Typically, an application will open a device, enqueue several
+buffers (priming the input queue) and then call BeginTransfer.
+In
+this way, it avoids the underflow which could otherwise occur if the
+application were swapped out immediately after enqueueing the first
+buffer to the device.
+
+To stop a transfer, call \f4mlEndTransfer\f1(3dm):
+
+.nf
+.RS .5i
+MLstatus mlEndTransfer( MLopenid openId);
+.RE
+.fi
+
+This causes the device to flush its input queue, to stop processing
+messages containing buffers, and to stop notification of exceptional
+events.
+
+.SH CLOSING A LOGICAL PATH
+
+When your application has finished using a device it may close it, see \f4mlClose\f1(3dm):
+
+.nf
+.RS .5i
+MLstatus mlClose( MLopenId openId);
+.RE
+.fi
+
+This causes an implicit EndTransfer on any device with an active
+transfer.
+It then frees any resources
+consumed by the device.
+If you wish all pending messages to be
+processed prior to closing a device, then simply uniquely
+identify a message (perhaps by adding a piece of user data or
+remembering its MSC number) and make sure it's the last thing you
+enqueue.
+Then, when it appears on the output queue, you know all
+messages have been processed.
+At that point you may close the device.
+
+.SH OPENING A LOGICAL JACK
+
+Some devices have controls that are associated with a particular jack.
+These might be brightness, volume, or genlock source.  In general, these
+controls do not affect the transformation of data from the jack to memory
+as a control like colorspace conversion does.  Often these controls are
+adjustable asynchronously to and simultaneously with the data transfer.
+
+The setup for this control connection is the same as for paths and transcoders,
+namely a call to \f4mlOpen\f1(3dm), to open the connection, \f4mlSetControls\f1(3dm)
+to change the control values, and \f4mlClose\f1(3dm) to terminate the connection.
+
+Of particular note here is that a queue is not allocated, and often the device
+driver does not support events.  (Though some might support events like SYNC LOST
+and SYNC GAINED).  Therefore a transfer may not be started, and you cannot use
+\f4mlSendControls\f1(3dm) or \f4mlSendBuffers\f1(3dm) to send messages to the
+driver.
+
+
+.SH SEE ALSO
+mlClose(3dm),
+mlGetCapabilities(3dm),
+mlGetControls(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm),
+mlQueryControls(3dm),
+mlReceiveMessage(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm),
+mlSetControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,70 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlPvCopy 3dm
+.SH NAME
+mlPvCopy: mlPvSizes \- sizeof and copy operations.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3void MLAPI mlPvSizes(MLpv* msg, MLint32* nParams, MLint32* nBytes);\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvCopy(MLpv* msg, MLbyte* buffer, MLint32 size);\f1
+.sp .8v
+.fi
+.SH PARAMETER
+.TP 16
+\f2msg\f1
+pointer to the first parameter in a message.
+(A message is an array of parameters, where the last parameter is ML_END.)
+.TP
+\f2nParams\f1
+pointer to 32-bit integer to store the number of parameters in the message.    May by NULL if the number of parameters is not needed.
+.TP
+\f2nBytes\f1
+pointer to 32-bit integer to store the number of bytes required to hold a copy of the message.  May by NULL if the number of bytes is not needed.
+.TP
+\f2buffer\f1
+Pointer to a buffer to hold the result of the copy operation.
+.TP
+\f2size\f1
+Size of the buffer in bytes.  This must be at least as large as the
+size of the message (as computed by \f4mlPvSizes\f1).
+
+.SH DESCRIPTION
+
+These routines operate on ML messages.  They are primarily intended
+for use by utility libraries which wish to mimic some of the
+functionality in the core ML library. Applications do not need to
+call these functions directly.
+
+\f4mlPvCopy\f1 takes a message and copies it into a memory buffer.
+The resulting copy includes both the original parameter list and any
+arrays referred to in that list.  (This is the same function used
+internally by \f4mlSendControls\f1(3dm) and \f4mlSendBuffers\f1(3dm).)
+
+\f4mlPvSizes\f1 computes both the number of parameters in the message,
+and the total amount of memory required to hold a complete copy of
+that message (that space includes memory for any arrays referred to in
+the message).  
+
+.SH DIAGNOSTICS
+
+These \f4mlPvCopy\f1 function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The operation was performed successfully.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+At least one of the arguments is invalid.
+Perhaps the buffer is too small to hold the result of the operation.
+
+.SH SEE ALSO
+mlIntro(3dm),
+mlParameters(3dm),
+mlGetCapabilities(3dm),
+mlPvGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

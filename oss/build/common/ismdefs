@@ -1,0 +1,261 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#*************************************************************************** 
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#*************************************************************************** 
+#
+# ismdefs
+#
+# This file is part of the SGI Build Environment, sgibuild(7), and
+# contains ISM specific macros and information. Every ISM should
+# have an ismdefs and ismrules file in its top level directory. Every
+# Makefile in the ISM should start with the following lines:
+#
+#	#! gmake
+#	ISM_DEPTH = ../.. [as needed to cd to top of ISM]
+#	include $(ISM_DEPTH)/ismdefs
+#
+# Anywhere AFTER the first target is defined, either the ismrules or
+# ismcommonrules file must be included. The ISM top level Makefile
+# must include the ismcommonrules file using the $(ISMCOMMONRULES)
+# macro. Non-top level Makefiles must include the ismrules file using
+# the $(ISMRULES) macro.
+#
+# Certain macros must be defined in the ismdefs files. You may define
+# any additional macros and include any other files that are specific
+# to the ISM.
+#
+#*************************************************************************** 
+
+#
+# This definition file is common to all platforms. If it must contain
+# platform-specific definitions, these must be inside "ifeq/endif"
+# blocks that test the $(PLATFORM) variable.
+#
+
+#
+# This file should not be included directly by the makefile -- the
+# makefile should include a platform-specific defs file, which should
+# then include this file.
+#
+
+#
+# --- Begin customisable section ---
+#
+#
+# The following macros may have different definitions in different
+# sub-components of the project. If they have not yet been defined,
+# this file will define them in the most generally-applicable way. A
+# sub-component that has specific requirements should define the
+# appropriate macros *before* including this file.
+#
+# Required macros
+#
+# ISM_NAME	- The programmatic name for the ISM. The name should
+#		  be all lower case with no whitespace. ISM_NAME is used
+#		  in many places such as the name for the RPM package.
+#
+# ISM_VERSION	- The version number for the ISM. The version should
+#		  not contain any dashes or whitespace.
+#
+# ISM_START_DATE - The date this version of the ISM was created. This
+#		  date is used as the base date for creating the package
+#		  release number. The release number for a package build
+#		  will be the number of hours between the build and the
+#		  ISM_START_DATE. When ISM_VERSION is changed,
+#		  ISM_START_DATE should be reset to the current date.
+#		  The date format must be MM/DD/YYYY. See mkreleasenum(1)
+#		  for more information on the creation of release numbers.
+#
+# ISM_TOP_DIR   - The top of the package directory (for RPM building)
+#
+# ISM_BUILD_REL_DIR - The build sub-directory, relative to the top
+#                 of the project directory. For instance,
+#                 $(ISM_BUILD_REL_DIR)/$(PLATFORM) is where all the
+#                 definition and rule files are located.
+#
+
+ifndef ISM_NAME
+ISM_NAME	= ml
+endif
+
+ifndef ISM_VERSION
+ISM_VERSION	= 1.1
+endif
+
+ifndef ISM_START_DATE
+ISM_START_DATE	= 12/01/2004
+endif
+
+ifndef ISM_BUILD_REL_DIR
+ISM_BUILD_REL_DIR = ./build
+endif
+
+#
+# --- End customisable section ---
+# All macros from this point on are shared among all sub-components of
+# the project
+#
+
+# ISMRULES	- This defines the location of the ismrules file. All
+#		  Makefiles other than the top level Makefile must include
+#		  the ismrules file using the $(ISMRULES) macro. The
+#		  $(ISM_DEPTH) macro is used to locate the top of the
+#		  ISM, where the ismrules file is located.
+#
+ISMRULES = $(ISM_DEPTH)/ismrules
+
+# ISM specific macros
+#
+# Anything that the ISM developer wants available to all
+# Makefiles in the ISM.
+#
+
+ifndef ISM_INCLUDE_DIR
+ISM_INCLUDE_DIR=/usr/include
+endif
+
+ifndef ISM_LIBRARY_DIR
+ISM_LIBRARY_DIR=/usr/lib
+endif
+
+ifndef ISM_BIN_DIR
+ISM_BIN_DIR=/usr/bin
+endif
+
+ifndef ISM_MLMODULE_DIR
+ISM_MLMODULE_DIR=/usr/lib/mlmodule
+endif
+
+ifndef ISM_MLSWMODULE_DIR
+ISM_MLMODULE_DIR=/usr/lib/mlswmodule
+endif
+
+ifndef ISM_RELNOTES_DIR
+ISM_RELNOTES_DIR=/usr/doc/$(ISM_NAME)-$(ISM_VERSION)
+endif
+
+
+# Determine if this is a DEBUG build or not, based on the
+# OPENML_DEBUG env var.
+# By default (ie: if not set), OPENML_DEBUG is set to 0.
+# Any other setting (eg: 1) makes this a debug build.
+
+ifndef OPENML_DEBUG
+OPENML_DEBUG = 0
+endif
+
+# Required inclusion
+#
+# The top level Makefile must include ismcommondefs whereas all
+# other Makefiles must include commondefs. The $(ISM_DEPTH)
+# macro, defined by each Makefile, is used to identify the
+# top level Makefile.
+#
+# variables that override ismcommondefs settings
+# PKG_ROOT - default to $(ISM_BUILD_REL_DIR)/$(PLATFORM)/dist
+PKG_ROOT  = $(ISM_BUILD_REL_DIR)/$(PLATFORM)/dist
+
+ifeq ($(ISM_DEPTH),$(ISM_BUILD_REL_DIR)/$(PLATFORM))
+include $(XPROOT)/oss/make/$(PLATFORM)/ismcommondefs
+else
+include $(XPROOT)/oss/make/$(PLATFORM)/commondefs
+endif
+
+#
+# Reserve 'Makefile' for use by IRIX, on Windows / Linux GNU make
+# groks 'GNUmakefile' (and will choose to use it ahead of 'makefile'
+# or 'Makefile'.
+#
+# overriding the common settings!
+# MKFILE - default Makefile
+MKFILE 	= GNUmakefile
+
+# Only define DEBUG flags if the OPENML_DEBUG env var is set to 1.
+
+ifneq ($(OPENML_DEBUG),0)
+ICDEFS = $(DASH_D)DEBUG
+ICOPTS = $(GEN_DEBUG_INFO)
+ICXXDEFS = $(DASH_D)DEBUG
+ICXXOPTS = $(GEN_DEBUG_INFO)
+else
+ICDEFS = 
+ICOPTS = 
+ICXXDEFS = 
+ICXXOPTS = 
+endif
+
+#
+# Installation rules for mlmodules
+# Used only by the makefiles in oss/devices -- but they share this
+# ismdefs file, so make the definition project-wide.
+#
+ifeq ($(PLATFORM),win32)
+MLMODULE_DIST_DIR = openml/mlmodule
+else
+MLMODULE_DIST_DIR = usr/lib/mlmodule
+endif
+
+ifneq ($(PLATFORM),win32)
+INSTALL_MLMODULE_DO_LINKS = \
+	ln -sf  $(DSO_FULL_NAME) $(DIST_ROOT)/$(MLMODULE_DIST_DIR)/$(SONAME); \
+	ln -sf $(DSO_FULL_NAME) $(DIST_ROOT)/$(MLMODULE_DIST_DIR)/$(DSO_TARGET)
+
+endif
+
+INSTALL_MLMODULE     = \
+	$(INSTALL) -d $(DIST_ROOT)/$(MLMODULE_DIST_DIR); \
+	$(INSTALL) $(DSO_INSTALLOPTS) \
+		-m 755 $(DSO_FULL_NAME) $(DIST_ROOT)/$(MLMODULE_DIST_DIR); \
+	$(INSTALL_MLMODULE_DO_LINKS)
+
+ifneq ($(PLATFORM),win32)
+INSTALL_MLDDKMODULE     = \
+	$(INSTALL) -d $(DIST_ROOT)/usr/lib/mlddkmodule; \
+	$(INSTALL) $(DSO_INSTALLOPTS) \
+		-m 755 $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlddkmodule; \
+	ln -sf  $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlddkmodule/$(SONAME); \
+	ln -sf $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlddkmodule/$(DSO_TARGET)
+
+INSTALL_MLSWMODULE     = \
+	$(INSTALL) -d $(DIST_ROOT)/usr/lib/mlswmodule; \
+	$(INSTALL) $(DSO_INSTALLOPTS) \
+		-m 755 $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlswmodule; \
+	ln -sf  $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlswmodule/$(SONAME); \
+	ln -sf $(DSO_FULL_NAME) $(DIST_ROOT)/usr/lib/mlswmodule/$(DSO_TARGET)
+endif

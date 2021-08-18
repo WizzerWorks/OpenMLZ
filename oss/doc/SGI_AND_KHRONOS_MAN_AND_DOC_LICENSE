@@ -1,0 +1,57 @@
+/***************************************************************************
+ * Copyright (c) 2000 Silicon Graphics, Inc.  
+ * Copyright © 2005 The Khronos Group Inc. 
+ * All Rights Reserved.
+ * Silicon Graphics, Inc. (SGI) devised this documentation in its 
+ * original form (Original Documentation).  The Khronos Group Inc. 
+ * (Khronos) have amended and extended this documentation (Extended Documentation). 
+ * SGI and Khronos grants the recipient ("Recipient") rights to modify, and 
+ * to reproduce and/or redistribute (whether in printed and/or electronic format) 
+ * the Extended Documentation to third party recipients ("also Recipient"), 
+ * and Recipient grants all other Recipients the same rights as to the Extended 
+ * Documentation as the same may have been modified over time (collectively, 
+ * the Documentation), all without charge.  It is provided, however, that the 
+ * foregoing is subject to the following conditions:  
+ * 
+ * 1. Each Recipient that modifies the Documentation may provide a notice 
+ * indicating its copyright interest in portions of the Documentation 
+ * authored by such Recipient. 
+ * 2. Each Recipient that modifies the Documentation shall indicate how 
+ * the Documentation has been so modified, and will clearly indicate that 
+ * such Recipient alone either bears the responsibility for such 
+ * modifications, or disclaims (by not superseding the wholesale disclaimer 
+ * of responsibility in Section 5 below) responsibility for such  
+ * modification(s). 
+ * 3. No Recipient shall alter any copyright notices and the remainder of 
+ * this Notice as they appear in the Documentation as received by such 
+ * Recipient. 
+ * 4. Except as contained in this notice, the name(s) of SGI, Khronos and any 
+ * Recipient(s) shall not be used in advertising or otherwise to promote the 
+ * sale, use or other dealings in this Documentation without prior written 
+ * authorization from SGI, Khronos or the given Recipient, each as to the use 
+ * of its own name. 
+ * 5. THE DOCUMENTATION IS PROVIDED "AS IS", WITHOUT WARRANTY OR 
+ * CONDITION OF ANY KIND, WHETHER STATUTORY, EXPRESS OR IMPLIED, INCLUDING 
+ * WITHOUT LIMITATION THE WARRANTIES AND CONDITIONS OF MERCHANTABILITY, 
+ * SATISFACTORY QUALITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+ * NONINFRINGEMENT. IN NO EVENT SHALL SGI, KHRONOS OR ANY OTHER AUTHOR OR 
+ * PROVIDER OF THE DOCUMENTATION BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION IN CONTRACT, TORT OR OTHERWISE, 
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE DOCUMENTATION. 
+ * 
+ * This documentation, in electronic format, comprises software developed 
+ * at private expense; if acquired under an agreement with the 
+ * USA government or any contractor thereto, it is acquired as commercial 
+ * computer software subject to the provisions of its applicable license 
+ * terms and conditions, as specified in (a) 48 CFR 12.212 of the FAR; 
+ * or, if acquired for Department of Defense units, (b) 48 CFR 227-7202 
+ * of the DoD FAR Supplement; or sections succeeding thereto.  
+ * Contractor/manufacturers are SILICON GRAPHICS, INC., 
+ * 1500 Crittenden Lane, Mountain View, CA 94043 and 
+ * The KHRONOS GROUP INC., 
+ *
+ * SGI is a trademark of Silicon Graphics, Inc., registered in the 
+ * United States and in numerous countries worldwide.  
+ * Khronos is a trademark of The Khronos Group Inc.
+ *
+ ***************************************************************************/

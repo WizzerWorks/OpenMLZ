@@ -1,0 +1,15 @@
+#
+# Rules for the Metrowerks Compiler suite
+#
+
+#
+# MWCC creates dependency files under the name ".dep" -- this rule
+# creates the expected ".d" file from that
+#
+# (note: if no extra processing is required, can also change the
+# default suffix in the defs file)
+#
+
+%.d: %.dep
+	$(BOOT_ROOT)/conv_mwcc_deps.pl $< > $@
+

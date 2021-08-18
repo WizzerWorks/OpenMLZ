@@ -1,0 +1,81 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluDefaults 3dm
+.SH NAME
+mluDefaults: mluComputePathParamsFromTiming \- compute path parameters from timing
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+\f3#include <ML/mlu.h>\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluComputePathParamsFromTiming(MLint32 timing, MLpv* pv, MLint32 flags);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2timing\fP
+A video timing defined by one of the ML_VIDEO_TIMING_INT32 enumerations.
+.TP
+\f2pv\fP
+A MLpv list consisting of control values described below.
+The values
+of the controls will be set according to the specified timing or format.
+.TP
+\f2flags\fP
+Reserved for future use - must be zero.
+.TP
+\f2bytesPerPixelNumRet, bytesPerPixelDenomRet\fP
+Return values whose ratio gives the number of bytes per pixel.
+
+.SH DESCRIPTION
+Use mluComputePathDefaultsFromTiming to get typical values for the following
+path parameters:
+.nf
+
+        ML_VIDEO_WIDTH_INT32,
+        ML_VIDEO_HEIGHT_F1_INT32,
+        ML_VIDEO_HEIGHT_F2_INT32,
+        ML_VIDEO_START_X_INT32,
+        ML_VIDEO_START_Y_F1_INT32,
+        ML_VIDEO_START_Y_F2_INT32,
+        ML_VIDEO_DOMINANCE_INT32,
+
+        ML_IMAGE_WIDTH_INT32,
+        ML_IMAGE_HEIGHT_1_INT32,
+        ML_IMAGE_HEIGHT_2_INT32,
+
+        ML_IMAGE_ROW_BYTES_INT32,
+        ML_IMAGE_SKIP_PIXELS_INT32,
+        ML_IMAGE_SKIP_ROWS_INT32,
+
+        ML_IMAGE_ORIENTATION_INT32,
+        ML_IMAGE_TEMPORAL_SAMPLING_INT32,
+        ML_IMAGE_INTERLEAVE_MODE_INT32
+
+.fi
+The MLpv list pv must consist of one or more of these parameters.
+The
+values that are assigned to the list are derived from the value of
+timing passed to mluComputePathParamsFromTiming.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The function returned the requested result.
+.TP
+ML_STATUS_INVALID_VALUE	
+The timing was not recognized.
+.TP
+ML_STATUS_INVALID_PARAMETER
+An invalid parameter was passed.
+
+.SH SEE ALSO
+mlImageParameters(3dm),
+mlVideoParameters(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,189 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlPvString 3dm
+.SH NAME
+mlPvString: mlPvValueToString, mlPvParamToString, mlPvToString, mlPvValueFromString, mlPvParamFromString, mlPvFromString \- convert param/value pair to and from strings
+.SH SYNOPSIS
+.nf
+\f3#include <ml.h>\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvValueToString(MLint64 objectId, MLpv* pv,\f1
+\f3                 char* buffer, MLint32* bufferSize);\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvParamToString(MLint64 objectId, MLpv* pv,\f1
+\f3                 char* buffer, MLint32* bufferSize);\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvToString(MLint64 objectId, MLpv* pv,\f1
+\f3                 char* buffer, MLint32* bufferSize);\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvValueFromString(MLint64 objectId, const char* buffer,\f1
+\f3                 MLint32* bufferSize, MLpv* pv,\f1
+\f3                 MLbyte* arrayData, MLint32 arraySize);\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvParamFromString(MLint64 objectId, const char* buffer,\f1
+\f3                 MLint32* size, MLpv* pv);\f1
+.sp .8v
+\f3MLstatus MLAPI mlPvFromString(MLint64 objectId, const char* buffer,\f1
+\f3                 MLint32* bufferSize, MLpv* pv,\f1
+\f3                 MLbyte* arrayData, MLint32 arraySize);\f1
+.sp .8v
+.fi
+.SH PARAMETER
+.TP 16
+\f2objectId\f1
+the 64-bit id number for the ML object on which the parameter is to be interpreted.
+.TP
+\f2pv\f1
+a pointer to the MLpv for use in the conversion.
+.TP
+\f2buffer\f1
+a pointer to a buffer to hold the string.
+.TP
+\f2bufferSize\f1
+initially contains the size of the buffer (in bytes).
+Upon completion, this is overwritten with the actual number of bytes processed.
+.TP
+\f2arrayData\f1
+a pointer to a buffer to hold any array data resulting from the conversion.
+.TP
+\f2arraySize\f1
+initially contains the size of the array buffer (in bytes).
+Upon completion, this is overwritten with the actual number of bytes processed.
+
+.SH DESCRIPTION
+
+These routines convert between ML param/value pairs and strings.
+They are of benefit to applications writing lists of parameters
+to/from files, but are most commonly used as an aid to debugging.
+
+These routines make use of the parameter capability data (see
+\f4mlPvGetCapabilities\f1(3dm) ) to generate and interpret
+human-readable ASCII strings.
+
+\f4mlPvParamToString\f1 converts pv->param into a
+string.
+The resulting value for bufferSize is the length of the
+string (excluding the terminating '\\0').
+
+\f4mlPvValueToString\f1 converts pv->value into a string.
+The resulting value for bufferSize is the length of the string
+(excluding the terminating '\\0').
+
+\f4mlPvToString\f1 converts the MLpv into a string.
+It writes the
+parameter name and value separated by '='.
+The resulting value for
+bufferSize is the length of the string (excluding the terminating '\\0').
+
+\f4mlPvParamFromString\f1 interprets a string as a parameter name and
+writes the result in pv->param.
+It expects the string was created by
+\f4mlPvParamToString\f1(3dm).
+
+\f4mlPvValueFromString\f1 interprets a string as the value of a MLpv
+and writes the result in pv->value.
+It expects the string was created
+by \f4mlPvValueToString\f1(3dm).
+For scalar parameters, the result is
+returned in the value field of the MLpv structure and the array
+arguments are not used.
+For array parameters, additional space is
+required for the result.
+In this case, the contents of the
+array are returned inside the arrayData buffer and arraySize is set to
+indicate the number of bytes written.
+
+\f4mlPvFromString\f1 interprets a string as a MLpv.
+It expects the
+string was created by \f4mlPvToString\f1(3dm).
+
+Note that the interpretation of a param/value pair depends on the
+parameter, its value, and the device on which it will be used.
+Thus,
+all these functions require both a param/value pair and a 64-bit
+device identifier.
+That identifier may be a static id (obtained from
+a call to \f4mlGetCapabilities\f1(3dm)), it may be the open id of a
+jack, path or transcoder (obtained from a call to \f4mlOpen\f1(3dm)), or it
+may be the id of an open pipe (obtained by calling
+\f4mlXcodeGetOpenPipe\f1(3dm)).
+
+.SH EXAMPLES
+
+Here is an example to print the interpretation of a video timing
+parameter by a previously-opened video path.
+Note that the
+calls could fail if that path did not accept the particular
+timing value we have chosen here.
+Note also that, since the
+interpretation is coming from the device, this will work for
+device-specific parameters.
+
+.nf
+.sp .8v
+char buffer[200];
+MLint32 buffer_size;
+MLpv control;
+control.param = ML_VIDEO_TIMING_INT32;
+control.value = ML_TIMING_1125_1920x1080_5994i;
+buffer_size = sizeof(buffer);
+mlPvParamToString(someOpenPath, &control, buffer, &buffer_size)
+printf("control.param is %s\\n", buffer);
+buffer_size = sizeof(buffer);
+mlPvValueToString(someOpenPath, &control, buffer, &buffer_size)
+printf("control.value is %s\\n", buffer);
+buffer_size = sizeof(buffer);
+mlPvToString(someOpenPath, &control, buffer, &buffer_size)
+printf("control is %s\\n", buffer);
+.br
+.fi
+
+Example output from this is:
+
+.nf
+.sp .8v
+control.param is ML_VIDEO_TIMING_INT32
+control.value is ML_TIMING_1125_1920x1080_5994i
+control is ML_VIDEO_TIMING_INT32 = ML_TIMING_1125_1920x1080_5994i
+.br
+.fi
+
+.SH DIAGNOSTICS
+
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The conversion was performed successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified id is invalid.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+The arguments could not be interpreted correctly.
+Perhaps the bufferSize
+or arraySize is too small to hold the result of the operation.
+.TP
+ML_STATUS_INVALID_PARAMETER
+The parameter name is invalid.
+When converting to a string, the
+parameter name was not recognized on this device.
+When converting
+from a string, the string could not be interpreted as a valid
+parameter for this device.
+.TP
+ML_STATUS_INVALID_VALUE	
+The parameter value is invalid.
+When converting to a string, the
+parameter value was not recognized on this device.
+When converting
+from a string, the string could not be interpreted as a valid
+parameter value for this device.
+
+.SH SEE ALSO
+mlParameters(3dm),
+mlPvGetCapabilities(3dm),
+mlIntro(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

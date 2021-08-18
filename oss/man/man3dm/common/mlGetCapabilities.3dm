@@ -1,0 +1,426 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlGetCapabilities 3dm
+.SH NAME
+mlGetCapabilities \- return ML capabilities list for a ML object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlGetCapabilities(MLint64 objectId, MLpv** capabilities);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2objectId\f1
+the 64-bit identifier for the object whose capabilities are being queried.
+.TP
+\f2capabilities\fP
+pointer to the head of the resulting capabilities list.
+This list should be treated as read-only by the application.
+When done with the list, call mlFreeCapabilities.
+
+.SH DESCRIPTION
+
+Use to query the capabilities of a ML object.
+Suitable objects
+include the system, device, path, jack, transcoder and pipe.
+
+Capabilities are queried in a hierarchical fashion.
+Begin by looking at
+the local system (using the special id ML_SYSTEM_LOCALHOST).
+The
+resulting capabilites list will include id numbers for all physical
+devices on the system.
+Call mlGetCapabilities on those to find the
+id's for all logical devices, and so on.
+You may descend through the
+tree in this manor until you get to the level of individual
+parameters.
+Finally, to obtain details on the interpretation of a
+particular parameter use the mlPvGetCapabilities call.
+
+As a convenience, you may call this function with either a static
+object identifier (obtained from a previous call to getCapabilities)
+or an open id (obtained by calling mlOpen).
+Querying the capabilities
+on an opened object is identical to querying the capabilities of the
+corresponding static object.
+
+The resulting capabilites list is returned as a
+pointer to the head of a MLpv list.
+It may be read, but not
+altered by the application.
+When finished with the list, call
+mlFreeCapabilities.
+
+.SH SYSTEM CAPABILITES
+
+Currently, the only legal system id is ML_SYSTEM_LOCALHOST.
+When a system id is queried, the resulting capabilites list contains
+the following parameters (not necessarily in this order):
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this system (remember
+		Ids are always of type MLint64), in the
+		current implementation, this is always
+		ML_SYSTEM_LOCALHOST.
+SYSTEM_DEVICE_IDS	INT64_ARRAY	Array of physical device IDs (these need
+		not be sorted or sequential).  For more
+		details on a particular device id call
+		mlGetCapabilities. This array
+		could be of length zero.
+.TE
+
+.SH DEVICE CAPABILITIES
+
+The list contains the following parameters (not
+necessarily in this order):
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this physical device.
+NAME	BYTE_ARRAY	NULL-terminated ASCII description of
+		this physical device (e\.g\. "Fireball").
+PARENT_ID	INT64	Resource Id for the system to which this
+		physical device is attached.
+DEVICE_VERSION	INT32	Version number for this particular
+		physical device.
+DEVICE_INDEX	INT32	Index number for this physical device.
+		This is used to distinguish multiple
+		identical physical devices - indexes are
+		generated with a consistent algorithm -
+		identical machine configurations will
+		have identical indexes - e\.g\. plugging a
+		particular card into the first 64-bit,
+		66MHz PCI slot in any system will give
+		the same index number.  Uniquely
+		identifying a device in a system-
+		independent way requires using both the
+		name and index.
+DEVICE_LOCATION	BYTE_ARRAY	Physical hardware location of this
+		physical device (on most platforms this
+		is the hardware graph entry).  Makes it
+		possible to distinguish between two
+		devices on the same i/o bus, and two
+		devices each with its own i/o bus.
+DEVICE_JACK_IDS	INT64_ARRAY	Array of jack IDs (these need not be
+		sorted or sequential).  For more details
+		on a particular jack id call
+		mlGetCapabilities.  This array
+		could be of length zero.
+DEVICE_PATH_IDS	INT64_ARRAY	Array of video path IDs (these need not
+		be sorted or sequential).  For more
+		details on a particular path id call
+		mlGetCapabilities.  This array
+		could be of length zero.
+DEVICE_XCODE_IDS	INT64_ARRAY	Array of transcoder device IDs (these
+		need not be sorted or sequential).  For
+		more details on a particular transcoder
+		id call mlGetCapabilities.  This
+		array could be of length zero.
+.TE
+
+.SH JACK CAPABILITIES
+
+The list contains the following parameters (not
+necessarily in this order):
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this physical device.
+NAME	BYTE_ARRAY	NULL-terminated ASCII description of
+		this jack (e\.g\. "Purple S-video").
+PARENT_ID	INT64	Resource Id for the physical device
+		to which this jack is
+		attached.
+PARAM_IDS	INT64_ARRAY	List of resource Ids for
+		parameters which may be set
+		and/or queried on this jack.
+OPEN_OPTION_IDS	INT64_ARRAY	List of resource Ids for
+		open option parameters which may be used
+		when this jack is opened.
+JACK_TYPE	INT32	Type of logical jack:
+  		ML_JACK_TYPE_COMPOSITE
+  		ML_JACK_TYPE_SVIDEO
+  		ML_JACK_TYPE_SDI
+  		ML_JACK_TYPE_DUALLINK
+  		ML_JACK_TYPE_SYNC
+  		ML_JACK_TYPE_GENLOCK
+  		ML_JACK_TYPE_GPI
+  		ML_JACK_TYPE_SERIAL
+  		ML_JACK_TYPE_ANALOG_AUDIO
+  		ML_JACK_TYPE_AES
+  		ML_JACK_TYPE_ADAT
+  		ML_JACK_TYPE_GFX
+  		ML_JACK_TYPE_AUX
+  		ML_JACK_TYPE_VIDEO
+  		ML_JACK_TYPE_AUDIO
+
+JACK_ALIAS_IDS	INT64_ARRAY	For dual-link video jacks this is
+		an array containing the jackIds
+		for the two jacks for which this
+		logical jack is an alias.
+		Has length 0 on other jack types.
+JACK_DIRECTION	INT32	Direction of data flow through this
+		jack.  May be:
+		ML_DIRECTION_IN
+		ML_DIRECTION_OUT
+JACK_COMPONENT_SIZE	INT32	Maximum number of bits
+		of resolution per component for
+		the video signal through this
+		jack.  Stored as an integer, so
+		8 means 8 bits of resolution.
+JACK_PATH_IDS	INT64_ARRAY	Array of video path IDs
+		which may use this jack.
+		(These need not be sorted or
+		sequential.)   For more details
+		on a particular path id call
+		mlGetCapabilities.  This
+		array could be of length zero.
+JACK_FEATURES	BYTE_ARRAY	NULL-terminated ASCII features
+		string.  Each entry in this
+		string represents a specific
+		feature supported by this
+		jack.  Entries are separated
+		by commas (there is no comma
+		after the very last entry).
+.TE
+
+.SH PATH CAPABILITIES
+
+The list contains the following parameters (not
+necessarily in this order):
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this path.
+NAME	BYTE_ARRAY	NULL-terminated ASCII
+		description of this path ,
+		(e\.g\., "Memory to S-Video Out").
+PARENT_ID	INT64	Resource Id for the physical
+		device on which this path
+		resides.
+PARAM_IDS	INT64_ARRAY	List of resource Ids for
+		parameters which may be set
+		and/or queried on this path.
+OPEN_OPTION_IDS	INT64_ARRAY	List of resource Ids for
+		open option parameters which may be used
+		when this path is opened.
+PRESET		MSG_ARRAY	Array of preset messages.
+		Each entry in the array is a 
+		message (a pointer to the head
+		of a MLpv list, where the last
+		entry in the list is ML_END).
+		Each message provides a single
+		valid combination of all 
+		setable parameters on this 
+		path.  In particular, it 
+		should be possible to call 
+		\f3dmSetControls\f1 using any 
+		of the entries in this array 
+		as the controls message.
+		Each path is obligated to 
+		provide at least one preset.
+PATH_TYPE	INT32	Type of this path:
+		ML_PATH_TYPE_MEM_TO_DEV
+		ML_PATH_TYPE_DEV_TO_MEM
+		ML_PATH_TYPE_DEV_TO_DEV
+PATH_COMPONENT_ALIGNMENT	INT32	The location in memory of the
+		first byte of the first component of
+		each line, must meet this
+		alignment. Stored as an integer
+		in units of bytes.
+PATH_BUFFER_ALIGNMENT	INT32	The location in memory of the
+		first byte of the first pixel of
+		each buffer, must meet this
+		alignment. Stored as an integer
+		in units of bytes
+PATH_SRC_JACK_ID	INT64	Resource Id for the jack which
+		is the source of data for this
+		path (unused if path is of
+		type ML_PATH_TYPE_MEM_TO_DEV).
+		For details on the jack id call
+		mlGetCapabilities.
+PATH_DST_JACK_ID	INT64	Resource Id for the jack which
+		is the destination for data from
+		this path (unused if path
+		is of type
+		ML_PATH_TYPE_DEV_TO_MEM).
+		For details on the jack id call
+		mlGetCapabilities.
+PATH_FEATURES	BYTE_ARRAY	NULL-termintated ASCII features
+		string.  Each entry in this
+		string represents a specific
+		feature supported by this
+		path.  Entries are separated
+		by commas (there is no comma
+		after the very last entry).
+.TE
+
+.SH XCODE CAPABILITIES
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this transcoder
+NAME	BYTE_ARRAY	NULL-terminated ASCII
+		description of this transcoder
+		(e\.g\. "Software DV and
+		DV25").
+PARENT_ID	INT64	Resource Id for the physical
+		device on which this transcoder
+		resides.
+PARAM_IDS	INT64_ARRAY	List of resource Ids for
+		parameters which may be set
+		and/or queried on this
+		transcoder (May be of length 0)
+OPEN_OPTION_IDS	INT64_ARRAY	List of resource Ids for
+		open option parameters which may be used
+		when this transcoder is opened.
+PRESET		MSG_ARRAY	Array of preset messages
+		Each entry in the array is a 
+		message (a pointer to the head
+		of a MLpv list, where the last 
+		entry in the list is ML_END).
+		Each message provides a single 
+		valid combination of all 
+		setable	parameters on this 
+		transcoder.  In particular, it 
+		should be possible to call 
+		\f3dmSetControls\f1 using any 
+		of the entries in this array as
+		the controls message.
+		Each transcoder is obligated to 
+		provide at least one preset for 
+		each transcoder.
+XCODE_ENGINE_TYPE	INT32	Type of this engine in this
+		transcoder:
+		ML_XCODE_ENGINE_TYPE_NULL
+XCODE_IMPLEMENTATION_TYPE	INT32	How this transcoder is
+		implemented:
+		ML_XCODE_IMPLEMENTATION_TYPE_SW
+		ML_XCODE_IMPLEMENTATION_TYPE_HW
+XCODE_PIXEL_LINE_ALIGNMENT	INT32	The location in memory of the
+		first byte of the first pixel 
+		of each line, must meet this
+		alignment. Stored as an integer
+		in units of bytes.
+XCODE_BUFFER_ALIGNMENT	INT32	The location in memory of the
+		first byte of the first pixel 
+		of each buffer, must meet this
+		alignment. Stored as an integer
+		in units of bytes.
+XCODE_FEATURES	BYTE_ARRAY	NULL-termintated ASCII features
+		string.  Each entry in this
+		string represents a specific
+		feature supported by this
+		transcoder.  Entries are
+		separated by commas (there is
+		no comma after the very last
+		entry).
+XCODE_SRC_PIPE_IDS	INT64_ARRAY	List of pipe ids
+		which the transcode engine may
+		obtain buffers to be processed.
+XCODE_DEST_PIPE_IDS	INT64_ARRAY	List of pipe ids from
+		which the transcode engine may
+		obtain buffers to be filled 
+		with the result of its 
+		processing.
+.TE
+.P
+
+.SH PIPE CAPABILITIES
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this path.
+NAME	BYTE_ARRAY	NULL-terminated ASCII
+		description of this path ,
+		(e\.g\., "Memory to S-Video Out").
+PARENT_ID	INT64	Resource Id for the transcoder
+		on which this pipe resides.
+PARAM_IDS	INT64_ARRAY	List of resource Ids for
+		parameters which may be set
+		and/or queried on this
+		transcoder (May be of length 0).
+PIPE_TYPE	INT32	Type of this pipe:
+		ML_PIPE_TYPE_MEM_TO_ENGINE
+		ML_PIPE_TYPE_ENGINE_TO_MEM
+.TE
+.P
+.SH EXAMPLE
+The following example looks for a particular device by name.
+It begins by querying the local system to find a list of physical
+device id's.
+Then it queries each physical device to find
+its name.
+.PP
+.nf
+.ft 4
+int findDeviceByName(const char* desiredName, MLint64* retDevId)
+{
+  int d;
+  MLpv* sysCap;
+  MLpv* deviceIds;
+
+  mlGetCapabilities(ML_SYSTEM_LOCALHOST, &sysCap);
+  if((deviceIds = mlPvFind(sysCap, ML_SYSTEM_DEVICE_IDS_INT64_ARRAY)) != NULL)
+    for(d=0; d< deviceIds->length; d++)
+      {
+        MLpv* devCap;
+        MLpv* deviceName;
+        mlGetCapabilities(deviceIds->value.pInt64[d], &devCap);
+        deviceName=mlPvFind(devCap, ML_NAME_BYTE_ARRAY);
+        if(deviceName != NULL &&
+           strcmp((const char*)deviceName->value.pByte, desiredName)==0)
+          {
+            *retDevId = deviceIds->value.pInt64[d];
+            mlFreeCapabilities(sysCap);
+            mlFreeCapabilities(devCap);
+            return 0;
+          }
+        mlFreeCapabilities(devCap);
+      }
+  mlFreeCapabilities(sysCap);
+  return -1;
+}
+.ft 1
+.fi
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The call was successful.
+.TP
+ML_STATUS_INVALID_ID
+The specified id was invalid.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+The capabilities pointer is invalid.
+
+.SH SEE ALSO
+mlFreeCapabilities(3dm),
+mlPvGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

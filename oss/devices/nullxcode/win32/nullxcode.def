@@ -1,0 +1,8 @@
+; nullxcode.def : Declares the module parameters for the DLL.
+
+LIBRARY      "nullxcode10"
+DESCRIPTION  'OpenML nullxcode MLmodule Windows Dynamic Link Library'
+
+EXPORTS
+ddInterrogate
+ddConnect

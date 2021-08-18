@@ -1,0 +1,71 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluTCFramesPerDay 3dm "\*(PR" "\*(BN"
+.SH NAME
+mluTCFramesPerDay \- Digital Media timecode mathematics
+.SH SYNOPSIS
+.nf
+#include <ML/mlu.h>
+.sp .8v
+\f3int mluTCFramesPerDay(const int tc_type)\f1
+.sp .8v
+.sp .8v
+.fi
+.SH TYPES
+.TP 16
+\f2MLUtimecode\f1
+A structure containing a representation of SMPTE time code on which
+certain mathematical and utility functions can be performed.
+Can be
+used with:
+.B mluTCAddTC(3dm)
+, 
+.B mluTCAddFrames(3dm)
+,
+.B mluTCToString(3dm)
+, 
+.B mluTCFromSeconds(3dm)
+,
+.B mluTCToSeconds(3dm)
+, 
+.B mluTCFromString(3dm)
+,
+.B mluTCFramesPerDay(3dm)
+, and 
+.B mluTCFramesBetween(3dm)
+See also 
+MLUtimecode(3dm)
+\.
+
+.SH ARGUMENTS
+.TP 16
+\f2tc_type\f1
+The \f2tc_type\f1 for which the number of frames in a 24 hour
+period is desired.
+See 
+.B tc_type(3dm)
+\.
+
+.SH DESCRIPTION
+
+.B mluTCFramesPerDay 
+returns the number of frames that
+occur during a 24-hour day, in the requested timecode format,
+as given by \f2tc_type\f1.
+See 
+.B 3tc_type(3dm)
+\.
+
+.SH SEE ALSO
+mluTCFramesBetween(3dm),
+mluTCFramesPerDay(3dm),
+mluTCFromSeconds(3dm),
+mluTCFromString(3dm),
+mluTCFromString(3dm),
+mluTCToSeconds(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+

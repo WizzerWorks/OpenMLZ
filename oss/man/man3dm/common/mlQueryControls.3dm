@@ -1,0 +1,102 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlQueryControls 3dm
+.SH NAME
+mlQueryControls \- query the control values from a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlQueryControls(MLopenid openid, MLpv* controls);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media object.
+.TP
+\f2controls\f1
+list of parameter/value (MLpv) pairs.
+
+.SH DESCRIPTION
+
+Sends a message containing a list of control parameters to a
+previously-opened digital media device.
+This control message is enqueued
+on the send queue in sequence with any other messages to that device.
+Each of the parameters will have the value field filled in with the
+current (at that time) value and thus are guaranteed to reflect any
+previously enqueued send controls messages have been processed.
+
+This call returns as soon as the message has been enqueued to
+the device.
+It does not wait until the values are actually available.
+
+As each message is processed by the device, a reply message will be
+enqueued for return to the application.
+By examining that reply, the
+application may obtain the result of attempting to process the
+requested controls.
+Note that a device may take an arbitrarily long
+time to generate a reply (it may, for example, wait for several messages
+before replying to the first).
+If your application requires an immediate
+response, consider using getControls instead.
+
+Enqueueing entails a copy operation, so the application is free to
+delete/alter the message array as soon as the call returns.
+Any error
+return value indicates the message has not been enqueued and
+no reply will be sent.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The controls were enqueued successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id is invalid.
+.TP
+ML_STATUS_INVALID_PARAMETER
+One of the parameters for which the control value is requested
+is invalid.
+.TP
+ML_STATUS_SEND_QUEUE_OVERFLOW
+There was not enough space on the path send queue
+for this latest message.
+Try again later after the device
+has had time to catch up, or specify a larger queue size
+on open.
+.TP
+ML_STATUS_RECEIVE_QUEUE_OVERFLOW
+There is not currently enough space on the receive
+queue to hold the reply to this message.
+Read some
+replies from the receive queue and then try to send
+again, or specify a larger queue size on open.
+
+.SH RETURN EVENTS
+Additionally if function returns ML_STATUS_NO_ERROR then a
+reply will be enqueued on the receive queue with one of the
+following message types:
+
+.TP
+ML_QUERY_CONTROLS_COMPLETE
+The message contains the values requested from the mlQueryControls operation.
+.TP
+ML_QUERY_CONTROLS_ABORTED
+The message was aborted due to some asynchronous event such as a mlEndTransfer(3dm)
+operation was performed.
+
+
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlGetControls(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm),
+mlReceiveMessage(3dm),
+mlEndTransfer(3dm)
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,76 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluTCFramesBetween 3dm "\*(PR" "\*(BN"
+.SH NAME
+mluTCFramesBetween \- Digital Media timecode mathematics
+.SH SYNOPSIS
+.nf
+#include <ML/mlu.h>
+.sp .8v
+\f3MLstatus mluTCFramesBetween\f1
+\f3    ( int *result,\f1
+\f3      const MLUtimecode *a,\f1
+\f3      const MLUtimecode *b )\f1
+.sp .8v
+.sp .8v
+.fi
+.SH TYPES
+.TP 16
+\f2MLUtimecode\f1
+A structure containing a representation of SMPTE time code on which
+certain mathematical and utility functions can be performed.
+Can be
+used with:
+\f3mluTCAddTC(3dm)\f1, \f3mluTCAddFrames(3dm)\f1,
+\f3mluTCToString(3dm)\f1, \f3mluTCFromSeconds(3dm)\f1,
+\f3mluTCToSeconds(3dm)\f1, \f3mluTCFromString(3dm)\f1,
+\f3mluTCFramesPerDay(3dm)\f1, and \f3mluTCFramesBetween(3dm)\f1.
+See also \f3MLUtimecode(3dm)\f1.
+
+.SH ARGUMENTS
+.TP 16
+\f2result\f1
+The result of calculating the difference (b-a), measured
+in frames.
+
+.TP
+\f2a, b\f1
+The two operands of the differencing operation.
+
+.SH DESCRIPTION
+
+\f3dmFramesBetween\f1 is used to determine the number of frames
+between two timecodes.
+It returns (b - a), as measured in frames.
+The result of the difference operation may be negative; this is
+\f2not\f1 an error condition.
+
+Note that the operands \f2a\f1 and \f2b\f1 must have the same
+\f2tc_type\fP as each other.
+
+.SH RETURN VALUE
+
+If a \f3MLUtimecode\fP operand (\f2a\fP or \f2b\fP) contains an
+illegal timecode value (e.g., a negative entry, invalid frame number,
+etc.), these functions will return ML_STATUS_INVALID_ARGUMENT, and the contents of
+\f2result\fP will be undefined.
+
+If the \f2tc_type\fP's of \f2a\fP and \f2b\fP do not match,
+\f3mluTCFramesBetween\fP will return ML_STATUS_INVALID_ARGUMENT, and the contents of
+\f2result\fP will be undefined.
+
+\f3mluTCFramesBetween\fP returns ML_STATUS_NO_ERROR upon successful completion
+of the subtraction operation.
+
+.SH SEE ALSO
+mluTCFramesBetween(3dm),
+mluTCFramesPerDay(3dm),
+mluTCFromSeconds(3dm),
+mluTCFromString(3dm),
+mluTCFromString(3dm),
+mluTCToSeconds(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

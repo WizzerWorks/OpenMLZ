@@ -1,0 +1,8 @@
+; winaudio.def : Declares the module parameters for the DLL.
+
+LIBRARY      "winaudio10"
+DESCRIPTION  'OpenML winaudio MLmodule Windows Dynamic Link Library'
+
+EXPORTS
+ddInterrogate
+ddConnect

@@ -1,0 +1,77 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlSetControls 3dm
+.SH NAME
+mlSetControls \- set controls on a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlSetControls(MLopenid openid, MLpv* controls);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media object.
+.TP
+\f2controls\f1
+list of parameter/value (MLpv) pairs.
+
+.SH DESCRIPTION
+
+Immediately sends a message composed of digital media parameters to
+the specified device.
+The device must already be open.
+The call blocks until the device has processed the message.
+To identify an invalid value specification, the device will
+set the length of the erroneous MLpv to -1, otherwise the
+controls array will not be altered in any way and may be reused.
+The controls message is not enqueued on the send queue but instead
+is sent directly to the device.
+Think of it as analogous to an out-of-band message on a network connection.
+The device will attempt to process the message "as soon as possible".
+
+.SH NOTES
+
+This call returns as soon as the control array has been processed.
+This does not mean that buffers have been affected by the parameter
+change.
+Rather, it means that the parameters have been validated and
+sent to the device (i\.e\.
+in most cases this means that they reside in
+registers).
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The control values were set successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id is invalid.
+.TP
+ML_STATUS_INVALID_PARAMETER
+At least one of the parameters in the controls array
+was not recognized (the first such offending control
+will be marked with length -1, remaining controls will
+be skipped and the entire message will be ignored).
+.TP
+ML_STATUS_INVALID_VALUE	
+At least one of the parameters in the controls array
+has a value which is invalid.
+This may be because the
+parameter value is outside the legal range, or it may be
+that parameter values are inconsistent.
+(the entire
+message will be ignored and the system will attempt to
+flag the first offending value with length -1).
+
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlGetControls(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

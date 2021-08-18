@@ -1,0 +1,66 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlBeginTransfer 3dm
+.SH NAME
+mlBeginTransfer \- begin a continuous media transfer
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlBeginTransfer( MLopenid openid);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media path or transcoder.
+
+.SH DESCRIPTION
+
+Begins a continuous transfer on the specified path or transcoder.
+This call
+advises the device to begin processing buffers and returning
+messages to the application.
+Attempting to send a buffer to a
+device that has not yet begun transfers is acceptable, but will cause
+the send queue to stall until transfers have started.
+
+Typically applications will open a device, send several buffers (priming
+the input queue) and then call mlBeginTransfer.
+
+This call returns as soon as the device has begun processing
+transfers.
+It does not block until the first buffer has been
+processed.
+
+It is an error to call this function more than once without an
+intervening call to mlEndTransfer.
+
+.SH NOTES
+
+The delay between a call to mlBeginTransfer and the transfer of
+the first buffer is implementation-dependent.
+To begin sending
+data at a particular time, an application should start the
+transfer early (enqueueing blank buffers) and use the
+UST/MSC mechanism to synchronize the start of real data.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The device agreed to begin transfer on the path.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id is invalid.
+.TP
+ML_STATUS_NO_OPERATION
+The call had no effect (transfers have already been started).
+
+.SH SEE ALSO
+mlEndTransfer(3dm),
+mlOpen(3dm),
+mlSendBuffers(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

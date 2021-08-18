@@ -1,0 +1,209 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#***************************************************************************
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#***************************************************************************
+#
+# ismcommondefs - Common build definitions and macros for inclusion
+#	in the ISM top level Makefile. This file automatically includes
+#	commondefs.
+#
+# See the man page sgibuild(7) for information on the use of this file
+# and its role in the SGI build environment.
+#
+#***************************************************************************
+
+ifndef _ISMCOMMONDEFS_INCLUDED_
+_ISMCOMMONDEFS_INCLUDED_ = 1
+
+
+#
+# Bring in the common macros and the distribution specific macros.
+#
+ifdef BOOT_ROOT
+include $(BOOT_ROOT)/commondefs
+include $(BOOT_ROOT)/distdefs
+else
+include $(ROOT)/usr/include/make/commondefs
+include $(ROOT)/usr/include/make/distdefs
+endif
+
+#
+# Tools for use when packaging ISMs
+#
+ifdef BOOT_TOOLROOT
+MKSPEC		= $(BOOT_TOOLROOT)/mkspec
+MKRELNUM	= $(BOOT_TOOLROOT)/mkreleasenum
+CHKRPM		= $(BOOT_TOOLROOT)/chkrpm
+else
+MKSPEC		= $(BOOT_ROOT)/mkspec
+MKRELNUM	= $(BOOT_ROOT)/mkreleasenum
+CHKRPM		= $(BOOT_ROOT)/chkrpm
+endif
+
+#
+# Tools with flags
+#
+MKSPECF		= $(MKSPEC) $(MKSPECFLAGS)
+MKRELNUMF	= $(MKRELNUM) $(MKRELNUMFLAGS)
+CHKRPMF		= $(CHKRPM) $(CHKRPMFLAGS)
+
+#
+# Spec processing arguments.
+#
+# Add to the macro MKSPEC_ARGS any environment variables you
+# would like to use in the spec. Here is the default set:
+#
+MKSPECFLAGS = $(MKSPECOPTS) $(SPECVARS)
+SPECVARS = $(GSPECVARS) $(ISPECVARS) $(LSPECVARS) $(VSPECVARS)
+
+GSPECVARS = \
+	ISM_NAME=$(ISM_NAME) \
+	ISM_VERSION=$(ISM_VERSION) \
+	PKG_SOURCE_NAME=$(PKG_SOURCE_NAME) \
+	PKG_RELEASE=$(PKG_RELEASE) \
+	PKG_ARCH=$(PKG_ARCH) \
+	PKG_BUILDER=$(PKG_BUILDER) \
+	PKG_DIST=$(PKG_DIST)
+
+#
+# Include $(ISMCOMMONRULES) after the first target is defined. If
+# $(BOOT_ROOT) is defined we are building the ISM that contains
+# the rules so we use that as the path to the rules file.
+#
+ifdef BOOT_ROOT
+ISMCOMMONRULES	= $(BOOT_ROOT)/ismcommonrules
+else
+ISMCOMMONRULES  = $(ROOT)/usr/include/make/ismcommonrules
+endif
+
+#
+# Packaging control files
+#
+# spec:			The RPM spec file before environment variables
+#			and macros have been resolved.
+#
+# .release_number:	Contains the package release number.
+#
+# rpmrc:		The RPM control file used to point RPM at the
+#			appropriate directory structure within the ISM.
+#
+ifndef SPEC
+SPEC = linux/build/spec
+endif
+_RELNUM_FILE := .release_number
+_RPMRC_FILE = $(PKG_ROOT)/rpmrc
+
+#
+# Package directories and macros
+#
+PKG_NAME	= $(ISM_NAME)-$(ISM_VERSION)
+PKG_SOURCE_NAME	= $(PKG_NAME).tar.gz
+PKG_SPEC_NAME	= $(PKG_NAME).spec
+ifndef PKG_RELEASE
+PKG_RELEASE	= 1
+#PKG_RELEASE	= `cat $(_RELNUM_FILE)`
+endif
+ifndef PKG_ARCH
+PKG_ARCH := $(shell $(RPM) --showrc | perl -e 'while (<>) {	\
+	    if (/\s*build\s+arch\s*:\s*(\S+)/i) {		\
+	        print $$1;					\
+		last;						\
+            }							\
+	}')
+endif
+PKG_RPM_NAME	= $(ISM_NAME)*-$(ISM_VERSION)-$(PKG_RELEASE).$(PKG_ARCH).rpm
+PKG_SRPM_NAME	= $(ISM_NAME)*-$(ISM_VERSION)-$(PKG_RELEASE).src.rpm
+
+#
+# Unfortunately RPM changed its external interface significantly
+# between version 2.5.5 (Red Hat 5.2) and 3.0 (Red Hat 6.0). To
+# control RPM we must know what version we are working with. This
+# will tell us whether we need to control RPM with an rpmrc file
+# (the old way) or using macros defined on the command line (the
+# new way).
+#
+PKG_RPM_NEEDS_MACROS := $(shell $(RPM) --version | perl -e 'while (<>) {\
+	    if (/(\d+)\.(\d+)/) {					\
+		(($$1 > 2) || ($$1 == 2 && $$2 > 92)) ?			\
+		    print "1" : print "0";				\
+		last;							\
+	    }								\
+	}')
+
+ifndef PKG_ROOT
+PKG_ROOT	= linux/dist
+endif
+
+PKG_SPEC_DIR	= $(PKG_ROOT)/SPECS
+PKG_SOURCE_DIR	= $(PKG_ROOT)/SOURCES
+PKG_BUILD_DIR	= $(PKG_ROOT)/BUILD
+PKG_RPM_DIR	= $(PKG_ROOT)/RPMS/$(PKG_ARCH)
+PKG_SRPM_DIR	= $(PKG_ROOT)/SRPMS
+PKG_BUILD_ROOT	= $(PKG_ROOT)/install
+
+ifndef BUILDER
+BUILDER		= Developer `whoami` on machine `hostname`
+endif
+PKG_BUILDER	= "$(BUILDER)"
+PKG_DIST	= "$(DISTRIBUTION)"
+
+ifeq ($(PKG_RPM_NEEDS_MACROS),1)
+PKG_OPTS	= -ba \
+		  --define "buildroot $(shell pwd)/$(PKG_BUILD_ROOT)" \
+		  --define "_topdir $(shell pwd)/$(PKG_ROOT)"
+else
+PKG_OPTS	= -ba --rcfile $(_RPMRC_FILE)
+endif
+PKG_CMD		= $(RPMBUILD) $(PKG_OPTS)
+
+#
+# Macros for building up the list of sources to package.
+#
+_TAR_LIST := $(shell pwd)/$(PKG_ROOT)/tar-list
+
+XDIRT = $(_TAR_LIST) $(_RELNUM_FILE)
+
+_TAR_MAKERULE = \
+	@terrstat=0; \
+	echo "-- Creating source tar list"; \
+	$(MAKEF) _TAR_LIST=$(_TAR_LIST) _SUBDIR_PATH="" tar-list \
+		|| terrstat=$$?; \
+	test $$terrstat -eq 0
+
+endif

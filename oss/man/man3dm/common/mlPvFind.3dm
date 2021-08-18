@@ -1,0 +1,60 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlPvFind 3dm
+.SH NAME
+mlPvFind \- Find a parameter in a ML messages.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLpv* MLAPI mlPvFind(MLpv* msg, MLint64 param);\f1
+.sp .8v
+.fi
+.SH PARAMETER
+.TP 16
+\f2msg\f1
+pointer to the first parameter in a message.
+(A message is an array of parameters, where the last parameter is ML_END.)
+.TP
+\f2param\f1
+The 64-bit ID number for a parameter, for example ML_IMAGE_WIDTH_INT32.
+.TP
+
+.SH DESCRIPTION
+
+
+Use \f4mlPvFind\f1 to find a particular parameter in a message.
+
+This is most useful when searching for a particular
+capability in the list of parameters returned by
+\f4mlGetCapabilities\f1(3dm).
+
+.SH EXAMPLES
+
+Here is an example to find the name of a ML object.
+
+.nf
+.sp .8v
+MLpv *caps;
+if( mlGetCapabilities(someObject, &caps) == ML_STATUS_NO_ERROR )
+  {
+    MLpv* name = mlPvFind(caps, ML_NAME_BYTE_ARRAY);
+    if( name != NULL )
+       printf("The name is %s\\n",(char*)(name->value.pByte));
+    mlFreeCapabilities(caps);
+  }
+.br
+.fi
+
+.SH DIAGNOSTICS
+
+Returns NULL on error.
+
+.SH SEE ALSO
+mlIntro(3dm),
+mlParameters(3dm),
+mlGetCapabilities(3dm),
+mlPvGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

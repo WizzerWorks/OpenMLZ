@@ -1,0 +1,64 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlGetControls 3dm
+.SH NAME
+mlGetControls \- get controls from a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlGetControls( MLopenid openid,\f1
+\f3           MLpv* controls);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media object.
+.TP
+\f2controls\fP
+list of parameter/value (MLpv) pairs.
+
+.SH DESCRIPTION
+
+Immediately queries the value of digital media parameters
+from the specified device.
+The device must already be open.
+The call blocks until the device has processed the message.
+The device will place its reply in the controls array argument
+(overwriting existing values).
+Control values that were obtained successfully will have non-negative lengths.
+getControls returns the state of the controls at the time the call is made.
+If getControls is called before a control has been explicitly set,
+then generally the returned value is undefined (exceptions are noted
+in the definitions of the controls, see for example ML_UST.)
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The control values were obtained successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id is invalid.
+.TP
+ML_STATUS_INVALID_PARAMETER
+At least one of the parameters in the controls array
+was not recognized (the offending control
+will be marked with length -1, remaining controls will
+still be processed).
+.TP
+ML_STATUS_INVALID_VALUE	
+At least one of the parameters in the controls array
+has a value which is invalid.
+(the offending control
+will be marked with length -1, remaining controls will
+still be processed).
+
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,279 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlImageParameters 3dm
+.SH NAME
+mlImageParameters \- Digital Media image parameters
+.SH DISCUSSION
+.P
+This manual page covers parameters for describing an image in memory.
+That image buffer may be the source for a video output path, the
+destination for a video input path, the source for a transcoder, or the
+destination for a transcoder.
+A stream of images is described via
+control parameters passed to the device using mlSetControls(3dm) or mlSendControls(3dm).
+Each
+individual image buffer is then sent using mlSendBuffers(3dm).
+.P
+.SH PATH AND TRANSCODER IMAGE CONTROL PARAMETERS
+
+These controls define the interpretation of raw bytes in
+memory as pixels in an image.
+.P
+They are persistent for the lifetime of the path.
+They may
+be sent using mlSetControls(3dm) or mlSendControls(3dm).
+Current settings may be queried using mlGetControls(3dm).
+.P
+The following controls describe the layout of pixels in the image buffer:
+.PP
+.ne 14
+.nf
+.RS .5i
+.ft 7
+O________________________________________
+|                 :                       |
+|                 SKIP_ROWS               |
+|                 :                       |
+|...SKIP_PIXELS...XXXXXXXXXXXXX    :      |
+|                 XXXXXXXXXXXXX    :      |
+|                 XXXXXXXXXXXXX    HEIGHT |
+|                 XXXXXXXXXXXXX    :      |
+|                 XXXXXXXXXXXXX    :      |
+|                                         |
+|                 :...WIDTH...:           |
+|                                         |
+|...ROW_BYTES.............................|
+|_________________________________________|
+.ft 1
+.RE
+.fi
+.TP 6
+ML_IMAGE_WIDTH_INT32
+The width of the image in pixels.
+Default is the same as ML_VIDEO_WIDTH.
+.TP
+ML_IMAGE_HEIGHT_1_INT32
+For progressive or interleaved buffers, this represents the height of each frame.
+For interlaced and non-interleaved signals, this represents the height of each odd field.
+Measured in pixels.
+Default is the same as ML_VIDEO_HEIGHT_F1.
+.TP
+ML_IMAGE_HEIGHT_2_INT32
+The height of each even field in an interlaced non-interleaved signal.
+Otherwise it has value 0.
+Default is 0.
+.TP
+ML_IMAGE_ROW_BYTES_INT32
+The number of bytes along one row of the image buffer.
+If this value is 0, each row is exactly IMAGE_WIDTH * pixel_size.
+Default is 0.
+.TP
+ML_IMAGE_SKIP_PIXELS_INT32
+The number of pixels to skip at the start of each line in the image buffer.
+Default is 0.
+Must be 0 if ROW_BYTES is 0.
+Default is 0.
+.TP
+ML_IMAGE_SKIP_ROWS_INT32
+The number of rows to skip at the start of each image buffer.
+Default is 0.
+.TP
+ML_IMAGE_ORIENTATION_INT32
+The orientation of the image.
+Either natural video order (ML_ORIENTATION_TOP_TO_BOTTOM) or natural graphics order (ML_ORIENTATION_BOTTOM_TO_TOP).
+Default is top-to-bottom.
+.P
+The following controls describe how interlaced signals are packed into buffers.
+.TP
+ML_IMAGE_TEMPORAL_SAMPLING_INT32
+Specifies whether images are progressive scan or field-based.
+Set to
+ML_TEMPORAL_SAMPLING_FIELD_BASED or
+ML_TEMPORAL_SAMPLING_PROGRESSIVE.
+Default is device-dependent.
+
+.TP
+ML_IMAGE_INTERLEAVE_MODE_INT32
+For field-based images, specifies
+whether the images have been interleaved into a single image
+(and reside in a single buffer) or are stored in two separate
+fields (hence in two separate buffers).
+Set to ML_INTERLEAVE_MODE_INTERLEAVED or ML_INTERLEAVE_MODE_SINGLE_FIELD.
+This is ignored for signals with progressive timing.
+Default is interleaved.
+
+.TP
+ML_IMAGE_DOMINANCE_INT32
+Sets the dominance for images for signals with field-based
+temporal sampling.
+Allowable values are ML_DOMINANCE_F1 and ML_DOMINANCE_F2.
+Default is F1 dominance.
+Ignored for progressive signals.
+
+.P
+The following parameter controls alpha.
+.TP
+ML_IMAGE_FILL_A_REAL32
+It is possible to specify a destination which has an alpha channel, while
+using a source which lacks alpha.
+In this case the alpha value for
+the destination is set by this parameter.
+For example, if capturing
+CbYCr data into an RGBA buffer, the RGB values come from the
+(color-converted) input, while the alpha comes from this control.
+This is a real number: a value of 0.0 is fully transparent, 1.0 is fully opaque.
+This may not be supported on all devices.
+.P
+The following parameters describe pixel storage descriptions.
+For simple
+cases just using format is sufficient, but for unusual combinations,
+set the format to "custom" and then use compression, sampling, colorspace, gamma and
+packing to describe pixel storage.
+
+.TP
+ML_IMAGE_PACKING_INT32
+Specifies the packing of pixels into memory.
+For a detailed definition and examples see mlPixel(3dm).
+The interpretation of packing values is:
+
+ML_PACKING_{\f2type\f1}{\f2size\f1}{\f2order\f1}
+
+{\f2signed\f1} blank for unsigned components, 'S' for signed components.
+
+{\f2size\f1} is the number of bits in each component.
+
+{\f2order\f1} is the order in which components are packed.
+Blank for
+normal component ordering (1,2,3,4), 'R' to indicate
+reversed component ordering (e\.g\.
+4,3,2,1) or a numeric sequence to
+indicate an unusual component order (e\.g\.
+1324 is RBGA).
+
+Common packings are:
+ML_PACKING_8,
+ML_PACKING_8_R,
+ML_PACKING_10,
+ML_PACKING_10_R,
+ML_PACKING_S12in16R,
+ML_PACKING_10_10_10_2,
+ML_PACKING_10_10_10_2_R
+
+.TP
+ML_IMAGE_SAMPLING_INT32
+Specifies the sampling pattern used to generate the data in each image buffer.
+For a detailed definition and examples see mlPixel(3dm).
+Possible values include:
+ML_SAMPLING_4444,
+ML_SAMPLING_4224,
+ML_SAMPLING_444,
+ML_SAMPLING_422,
+ML_SAMPLING_420_MPEG1,
+ML_SAMPLING_420_MPEG2,
+ML_SAMPLING_420_DVC625,
+ML_SAMPLING_411_DVC,
+ML_SAMPLING_4004,
+ML_SAMPLING_400.
+
+.TP
+ML_IMAGE_COLORSPACE_INT32
+Specifies the colorspace of pixels in each image buffer.
+For a detailed definition and examples see mlPixel(3dm).
+Possible values include:
+ML_COLORSPACE_RGB_601_FULL,
+ML_COLORSPACE_RGB_601_HEAD,
+ML_COLORSPACE_CbYCr_601_FULL,
+ML_COLORSPACE_CbYCr_601_HEAD,
+ML_COLORSPACE_RGB_240M_FULL,
+ML_COLORSPACE_RGB_240M_HEAD,
+ML_COLORSPACE_CbYCr_240M_FULL,
+ML_COLORSPACE_CbYCr_240M_HEAD,
+ML_COLORSPACE_RGB_709_FULL,
+ML_COLORSPACE_RGB_709_HEAD,
+ML_COLORSPACE_CbYCr_709_FULL,
+ML_COLORSPACE_CbYCr_709_HEAD.
+
+.TP
+ML_IMAGE_GAMMA_INT32
+This is analogous to the colorspace parameter.
+It sets the gamma of
+the pixels in the image.
+Allowable values are:
+ML_GAMMA_UNSPECIFIED,
+ML_GAMMA_709,
+ML_GAMMA_240M,
+ML_GAMMA_LINEAR.
+
+Setting the value of gamma to ML_GAMMA_UNSPECIFIED disables any
+attempt at gamma correction on this signal.
+This is the default (for
+compatibility with hardware which does not support gamma correction).
+The difference between the gamma of the source and that of the
+destination determines the amount of gamma correction (if any).
+Note - attempting to convert from nonlinear to linear gamma while
+only using 8 bits will often introduce significant visible artifacts.
+
+.P
+The following parameters control compression
+.TP
+ML_IMAGE_COMPRESSION_INT32
+Specifies the compression scheme.
+Common values are ML_COMPRESSION_UNCOMPRESSED, ML_COMPRESSION_BASELINE_JPEG, ML_COMPRESSION_DV_PAL,
+ML_COMPRESSION_DV_NTSC, ML_COMPRESSION_MPEG2I.
+Default is uncompressed (if the device supports that).
+
+.TP
+ML_IMAGE_COMPRESSION_FACTOR_REAL32
+The desired compression factor.
+A value of 1 indicates no
+compression, a value of X indicates that approximately X compressed
+buffers require the same space as 1 uncompressed buffer.
+Note that
+the size of the uncompressed buffer depends on image width, height,
+packing and sampling.
+This parameter only applies when compressing
+data.
+The default value is implementation-dependent, but should
+represent a reasonable tradeoff between compression time, quality and
+bandwidth.
+
+.SH PATH AND TRANSCODER PIPE IMAGE BUFFER PARAMETERS
+These parameters provide the source or destination data for processing
+a fragment of a media stream.
+For video signals, a fragment typically
+corresponds to one field or frame.
+They are passed in a call to
+mlSendBuffers(3dm).
+.TP 6
+ML_IMAGE_BUFFER_BYTE_POINTER
+Pointer to the first byte of an in-memory image buffer.
+The buffer
+address must comply with the alignment constraints for buffers on the
+particular path or transcoder to which it is being sent.
+(See
+mlGetCapabilities(3dm) for details
+of determining alignment requirements).
+.P
+.SH EXAMPLES
+Here is an example that sets the image width and height for a progressive, HDTV signal:
+.nf
+.sp .8v
+MLpv message[3];
+message[0].param = ML_IMAGE_WIDTH_INT32;
+message[0].value.int32 = 1920;
+message[1].param = ML_IMAGE_HEIGHT_F1_INT32;
+message[1].value.int32 = 1080;
+message[2].param = ML_END;
+mlSetControls( device, message);
+.br
+.fi
+.SH SEE ALSO
+mlquery(1),
+mlGetCapabilities(3dm),
+mlPixel(3dm),
+mlPvGetCapabilities(3dm),
+mlSendControls(3dm),
+mlVideoParameters(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

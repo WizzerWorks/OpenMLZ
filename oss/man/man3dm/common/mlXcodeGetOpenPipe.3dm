@@ -1,0 +1,55 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlXcodeGetOpenPipe 3dm
+.SH NAME
+mlXcodeGetOpenPipe \- get an open pipe to a transcoder device
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlXcodeGetOpenPipe(MLopenid openxcode,\f1
+\f3           MLint64 pipeId, MLopenid* openpipe);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openxcode\f1
+a previously-opened digital media transcoder object.
+.TP
+\f2pipeId\f1
+descriptor for the particular pipe desired.
+Use mlGetCapabilities to find the allowable pipe ids for a particular transcoder.
+.TP
+\f2openpipe\f1
+the resulting open pipe handle.
+This may be used in calls to set/get/send controls and send buffers.
+
+.SH DESCRIPTION
+
+Xcode devices support multiple pipes for communicating with the
+application.
+This function provides the means to get handles to those
+additional pipes.
+
+These additional pipes to the transcoder device
+are created when the transcoder was opened and will be automatically
+destroyed when it is closed.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The queue was obtained successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device id or pipe id is invalid.
+
+.SH SEE ALSO
+mlClose(3dm),
+mlGetCapabilities(3dm),
+mlOpen(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

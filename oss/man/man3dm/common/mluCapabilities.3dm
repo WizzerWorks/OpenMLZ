@@ -1,0 +1,158 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluCapabilities 3dm
+.SH NAME
+mluCapabilities: mluFindDeviceByName mluFindJackByName mluFindPathByName mluFindXcodeByName mluFindXcodePipeByName mluFindJackByDirection mluFindFirstInputJack mluFindFirstOutputJack mluFindPathFromJack mluFindPathToJack \- convenient functions for accessing the ml capabilites
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+\f3#include <ML/mlu.h>\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindDeviceByName(MLint64 sysId, const char* name,\f1
+\f3  MLint64* retDevId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindJackByName(MLint64 devId, const char* name,\f1
+\f3  MLint64* retDevId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindPathByName(MLint64 devId, const char* name,\f1
+\f3  MLint64* retDevId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindXcodeByName(MLint64 devId, const char* name,\f1
+\f3  MLint64* retDevId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindXcodePipeByName(MLint64 xcodeId, const char* name,\f1
+\f3  MLint64* retPipeId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindJackByDirection( MLint64 devId, MLint32 direction,\f1
+\f3  MLint64* retJackId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindFirstInputJack( MLint64 devId, MLint64* retJackId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindFirstOutputJack( MLint64 devId, MLint64* retJackId);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindPathFromJack( MLint64 jackId,\f1
+\f3  MLint64* retPathId, MLint32* retPathAlignment);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluFindPathToJack( MLint64 jackId,\f1
+\f3  MLint64* retPathId, MLint32* retPathAlignment);\f1
+.sp .8v
+.fi
+.SH PARAMETER
+.TP 16
+\f2sysId\fP
+The ML system identifier.
+Currently, the only valid sysId is ML_SYSTEM_LOCALHOST.
+.TP
+\f2devId\fP
+The ML device identifier.
+.TP
+\f2xcodeId\fP
+The ML transcoder identifier.
+.TP
+\f2jackId\fP
+The ML jack identifier.
+.TP
+\f2name\fP
+pointer to a character string corresponding to the ML_NAME of the object being searched.
+.TP
+\f2retDevId\fP
+The resulting ML device identifier.
+.TP
+\f2retJackId\fP
+The resulting ML jack identifier.
+.TP
+\f2retPathId\fP
+The resulting ML path identifier.
+.TP
+\f2retXcodeId\fP
+The resulting ML transcoder identifier.
+.TP
+\f2retPipeId\fP
+The resulting ML pipe identifier.
+.TP
+\f2retPathAlignment\fP
+The buffer alignment required for use with the returned path, may be NULL if you don't require alignment information.
+
+.SH DESCRIPTION
+
+These routines provide a convenient way to search and interpret the
+ML capabilities tree.
+That tree is a hierarchy.
+So, to find a
+video path, first find a device, then a jack on that device, and then
+a path to/from that jack.
+
+In cases where there is more than one choice, these routines return
+the first valid match.
+
+.SH EXAMPLE
+This example opens a path from the first input jack on a named device.
+.PP
+.nf
+.ft 4
+  MLint64 devId=0;
+  MLint64 jackId=0;
+  MLint64 pathId=0;
+  MLint32 memAlignment;
+  MLopenid openPath;
+
+  if( mluFindDeviceByName( ML_SYSTEM_LOCALHOST, desiredDeviceName,
+                           &devId ))
+    {
+      fprintf(stderr, "Cannot find device.\n");
+      return -1;
+    }
+
+  if( mluFindFirstInputJack( devId, &jackId ))
+    {
+      fprintf(stderr, "Cannot find a suitable input jack.\\n");
+      return -1;
+    }
+
+  if( mluFindPathFromJack( jackId, &pathId, &memAlignment ))
+    {
+      fprintf(stderr, "Cannot find a path from jack\\n");
+      return -1;
+    }
+
+  if( mlOpen( pathId, NULL, &openPath ) )
+    {
+      fprintf(stderr, "Cannot open path.\\n");
+      return -1;
+    }
+.ft 1
+.fi
+.P
+
+.SH DIAGNOSTICS
+These functions return one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The operation was successful.
+.TP
+ML_STATUS_INVALID_ID
+The specified ml id value is invalid.
+.TP
+ML_STATUS_ARGUMENT
+At least one of the arguments is invalid.
+.SH SEE ALSO
+mlGetCapabilities(3dm), 
+mlOpen(3dm),
+mlIntro(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+

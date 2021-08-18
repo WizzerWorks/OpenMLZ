@@ -1,0 +1,82 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlReceiveMessage 3dm
+.SH NAME
+mlReceiveMessage \- receive replies from a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlReceiveMessage(MLopenid openid,\f1
+\f3           MLint32* messageType, MLpv** reply);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\fP
+a previously-opened digital media object.
+.TP
+\f2messageType\fP
+integer to be filled in by the device, indicating the type of message which has been received.
+.TP
+\f2reply\fP
+pointer to the head of the reply message.
+
+.SH DESCRIPTION
+
+Reads the oldest message from the receive queue.
+(The receive queue
+holds reply messages sent from a digital media device back to an
+application.)
+
+Messages on the receive queue may be the result of processing a
+message sent with SendControls, they may result from processing
+a message sent with SendBuffers, or they may be generated
+spontaneously by the device to advise the application of some
+exceptional event.
+
+Each message sent with SendBuffers or SendControls generates a single
+reply message with messageType indicating whether or not the message
+was processed successfully, a pointer to a list of parameters holding
+the reply and the size of the reply.
+
+The contents of the reply array are guaranteed to remain valid until
+the next call to receive message.
+It is acceptable for an application
+to modify the reply and then send it to the same or to another device by calling
+SendControls or SendBuffers.
+
+Note that, on some devices, triggering of the receive wait handle does
+not guarantee that a message is waiting on the receive queue.  Thus
+applications must check for a status of ML_STATUS_RECEIVE_QUEUE_EMPTY
+even if they only call mlReceiveMessage after the wait handle is
+triggered.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The reply was obtained successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified device handle is invalid.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+One of the arguments is invalid (perhaps you passed a
+NULL pointer by mistake).
+.TP
+ML_STATUS_RECEIVE_QUEUE_EMPTY
+There was no entry on the receive queue.
+Try again
+later after the device has had time to process additional
+messages.
+
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

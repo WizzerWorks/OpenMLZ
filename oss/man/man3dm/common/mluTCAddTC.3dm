@@ -1,0 +1,136 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluTCAddTC 3dm "\*(PR" "\*(BN"
+.SH NAME
+mluTCAddTC, mluTCAddFrames \- digital media timecode mathematics
+.SH SYNOPSIS
+.nf
+#include <ML/mlu.h>
+.sp .8v
+\f3MLstatus mluTCAddTC\f1
+\f3    ( MLUtimecode * result,\f1
+\f3      const MLUtimecode *s1,\f1
+\f3      const MLUtimecode *s2,\f1
+\f3	  int *overflowunderflow )\f1
+.sp .8v
+\f3MLstatus mluTCAddFrames\f1
+\f3    ( MLUtimecode * result,\f1
+\f3      const MLUtimecode *s1,\f1
+\f3      int frames,\f1
+\f3	  int *overflowunderflow )\f1
+.sp .8v
+.sp .8v
+.fi
+.SH TYPES
+.TP 16
+\f2MLUtimecode\f1
+A structure containing a representation of SMPTE time code on which
+certain mathematical and utility functions can be performed.
+Can be
+used with:
+.B mluTCAddTC(3dm),
+.B mluTCAddFrames(3dm),
+.B mluTCToString(3dm),
+.B mluTCFromSeconds(3dm),
+.B mluTCToSeconds(3dm),
+.B mluTCFromString(3dm),
+.B mluTCFramesPerDay(3dm)
+, and 
+.B mluTCFramesBetween(3dm).
+See also 
+.B MLUtimecode(3dm).
+
+.SH ARGUMENTS
+.TP 16
+\f2result\f1
+The result of the addition operation.
+Note that this must be a
+valid pointer, and should not point to the same \f2MLUtimecode\fP
+as \f2s1\fP or \f2s2\fP.
+
+.TP
+\f2s1, s2\f1
+The timecode operand(s) to be used in the addition.
+
+.TP
+\f2frames\f1
+The number of frames to add to the operand \f2s1\fP.
+
+.TP
+\f2underflowoverflow\f1
+An optional argument so that the user of the library can tell if an
+underflow or overflow condition occurred.
+If the app doesn't care
+about overflow/underflow, it should pass in NULL.
+Otherwise,
+\f2underflowoverflow\f1 will be set to 0 (normal), a positive
+number (overflow), or a negative number
+(underflow).
+
+.SH DESCRIPTION
+
+\f3mluTCAddTC\fP adds operand \f2s1\fP to operand \f2s2\fP.
+It
+returns the result of the addition in \f2result\fP.
+The tc_type of
+\f2result\fP will be the same as the tc_type of the operands.
+It is
+required that the tc_type of \f2s1\fP be the same as the tc_type of
+\f2s2\fP.
+See \f3NOTES\fP for information on adding timecodes of
+differing tc_type.
+\f3mluTCAddTC\fP will return ML_STATUS_INVALID_ARGUMENT if the
+addition failed.
+See \f3RETURN VALUE\fP.
+
+\f3mluTCAddFrames\fP adds \f2frames\fP video frames to operand \f2s1\fP
+and returns the result in \f2result\fP.
+The tc_type of \f2result\fP
+will be the same tc_type as \f2s1\fP.
+It is acceptable for
+\f2frames\fP to be a negative value, but overflowunderflow from
+\f3mluTCAddFrames\fP should be checked to verify that there was no
+underflow condition.
+
+.SH RETURN VALUE
+
+If a \f3MLUtimecode\fP operand (\f2s1\fP or \f2s2\fP) contains an
+illegal timecode value (e\.g\., a negative entry, invalid frame number,
+these functions will return MLU_STATUS_INVALID_ARGUMENT, and the contents of
+\f2result\fP will be undefined.
+
+If the result of the addition overflows or underflows the 24 hour
+period, these functions will return MLU_STATUS_NO_ERROR, and the contents
+of \f2result\fP will have wrapped to a 24 hour clock.
+The
+\f2overflowunderflow\fP parameter will have been set, however, on
+an underflow or overflow condition.
+
+\f3mluTCAddTC\fP and \f3mluTCAddFrames\fP return MLU_STATUS_NO_ERROR upon
+successful completion of the addition operation.
+
+.SH NOTES
+
+In order for \f3MLUtimecode\fP's of differing \f2tc_type\fP (e\.g\.,
+MLU_TC_30_ND and MLU_TC_2997_4FIELD_DROP) to be added, they must first
+be converted to either frames or seconds, and added as either frames
+or seconds, as appropriate for the situation.
+Note that when adding
+\f3MLUtimecode\fP's with different tc_type's, different results may be
+obtained by adding them as seconds or as frames--which is why
+\f3mluTCAddTC\fP does not allow two \f3MLUtimecode\fP's of different
+tc_type's to be added.
+
+.SH SEE ALSO
+mluTCFramesBetween(3dm),
+mluTCFramesPerDay(3dm),
+mluTCFromSeconds(3dm),
+mluTCFromString(3dm),
+mluTCFromString(3dm),
+mluTCToSeconds(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+

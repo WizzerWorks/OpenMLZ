@@ -1,0 +1,88 @@
+				Audio Example Programs
+
+In all descriptions below:
+
+<device name>	Name of the audio device, e.g., "OSS Audio Device".
+
+device_index	The numerical index of the device as displayed by dmquery.
+		Optional -- defaults to first available index.
+
+<input jack>	Name of an available input Jack/Path, e.g., "line Input".
+		Optional -- defaults to first available jack/path.
+
+<output jack>	Name of an available output Jack/Path, e.g., "Speaker Output".
+		Optional -- defaults to first available jack/path.
+
+<volume in dB>	Decimal value for the gain on the path, specified in decibels.
+		Range is device-specific, but usually -60 to 0.  Optional --
+		defaults to 0.
+
+<audio file name>  The name of an audio file in AIFF, WAVE, or NeXT/Sun
+		.snd/.au format.
+
+
+Arguments in brackets [] are optional.
+
+audiotomem -- simple audio capture example
+
+Opens an input path and reads buffers of audio data into memory.
+
+flags:  -d <device name> [-I device_index] [-j <input jack>]
+
+
+
+memtoaudio -- simple audio output example
+
+Opens an output path and plays an internally-generated 
+low-frequency sine wave out through that path.
+
+flags: -d <device name> [-I device_index] [-j <output jack>] 
+
+
+
+audioloop -- audio loopback example 
+
+Opens an input path and an output path;  reads data from the input 
+and writes it to the output.  
+
+flags:
+    [-f framesize]
+    [-r <sampling rate>]
+     -i
+        -d <input device name>
+       [-I <input device index>]
+       [-j <input jack>]
+       [-v <input level (in dB)>]
+    [[-o ]
+       [-d <output device name>]
+       [-I <output device index>]
+       [-j <output jack>]
+       [-v <output level (in dB)>]]
+
+The -i flag specifies that the following (-d, -I, -j, and -v) arguments 
+refer to the INPUT.
+The -o flag specifies that the following (-d, -I, -j, and -v) arguments 
+refer to the OUTPUT.
+
+If no -o is specified, the output device defaults to the input device.
+NOTE:  This will only work on full duplex devices.
+
+
+
+audiotofile -- audio recording example
+
+Opens an input path and an audio file; reads data from the input path
+and writes it to the audio file.
+
+syntax:  -d <device name> [-I device_index] [-j <input jack>] <audio file name>
+
+
+
+filetoaudio -- audio playback example
+
+Opens an output path and an audio file; reads data from the audio file
+and writes it to the output path.  The file must be an AIFF, WAVE, or
+NeXT/Sun .snd/.au file with 16-bit, monophonic (1-channel), uncompressed
+data.
+
+syntax: filetoaudio <device name> <audio file name>

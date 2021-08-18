@@ -1,0 +1,509 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#***************************************************************************
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#***************************************************************************
+# commondefs - Common build definitions and macros.
+#
+# See the man page sgibuild(7) for information on the use of this file
+# and its role in the SGI build environment.
+#
+#***************************************************************************
+
+ifndef _COMMONDEFS_INCLUDED_
+_COMMONDEFS_INCLUDED_ = 1
+
+ifneq ($(PLATFORM),win32)
+dummy := $(error Wrong platform)
+endif
+
+#
+# While the $(MAKE) macros is already defined by make, there are
+# a number of flags we want to specify to obtain the proper behavior
+# for sgibuild.
+#
+MAKEF = $(MAKE) $(MAKEOPTS)
+
+#
+# - While gmake allows parallel builds (-j), it is rather limited
+#   in how it migrates the parallelism down to submakes. The only
+#   parallelism provided to submakes is none or infinite (i.e. -j
+#   with no argument). Using sgibuild, the developer can define
+#   the PARALLEL_MAKE environment variable and infinite job slot
+#   builds will be done. To throttle the parallel behavior the
+#   MK_LOAD macro can be set to "-l <load>" which will limit the
+#   number of jobs started based on the system load. See the GNU
+#   make documentation for more information on the -j and -l options.
+#
+# - gmake wants to display the name of the directory it enters
+#   when it is invoked using $(MAKE). This build environment displays
+#   its own messages so the gmake messages are disabled.
+#
+
+## However, parallel makes appear somewhat "un-robust" on NT, so
+## disable for now...
+## --FJaubert
+
+##ifdef PARALLEL_MAKE
+##MK_JOBS = -j
+##endif
+
+MK_JOBS = -j 1
+
+MAKEOPTS = --no-print-directory $(MK_JOBS) $(MK_LOAD)
+
+#
+# Use bash (Bourne Again Shell) as the Makefile shell environment
+#
+SHELL = /bin/bash
+
+#
+# Command definitions
+#
+# Use these macros or their corresponding flag augmented macros instead
+# of specifying the commands directly. The advantage to using the flag
+# version of a command is that it allows the specifying of flags on the
+# make command line.
+#
+# See also definitions in the compiler-specific files
+#
+AR		= $(TOOLROOT)/usr/bin/ar
+BISON		= $(TOOLROOT)/usr/bin/bison
+FLEX		= $(TOOLROOT)/usr/bin/flex
+LEX		= $(FLEX)
+NM		= $(TOOLROOT)/usr/bin/nm
+RM		= rm -f
+SIZE		= $(TOOLROOT)/usr/bin/size
+STRIP		= $(TOOLROOT)/usr/bin/strip
+YACC		= $(TOOLROOT)/usr/bin/yacc
+TAR		= $(TOOLROOT)/bin/tar
+
+#
+# Compiler-specific settings
+# We allow the use of different compilers with the USE_COMPILER env var
+# Currently supported compilers
+#   gnu (GCC)
+#   msvc (Microsoft Visual C) (DEFAULT)
+#   mwcc (Metrowerks Codewarrior)
+#
+SUPPORTED_COMPILERS= gnu msvc mwcc
+
+ifndef USE_COMPILER
+USE_COMPILER = msvc
+endif
+
+ifeq (,$(findstring $(USE_COMPILER),$(SUPPORTED_COMPILERS)))
+	dummy := $(error Unknown compiler $(USE_COMPILER); valid compilers \
+	are: $(SUPPORTED_COMPILERS))
+endif
+
+include $(BOOT_ROOT)/$(USE_COMPILER)defs
+
+#
+# Commands with flags
+#
+ARF		= $(AR) $(ARFLAGS)
+ASF		= $(AS) $(ASFLAGS)
+BISONF		= $(BISON) $(YFLAGS)
+CCF		= $(CC) $(CFLAGS)
+CXXF		= $(CXX) $(CXXFLAGS)
+FLEXF		= $(FLEX) $(LFLAGS)
+LDF		= $(LD) $(LDFLAGS)
+LEXF		= $(LEX) $(LFLAGS)
+YACCF		= $(YACC) $(YFLAGS)
+
+#
+# Define three versions of the install command.
+#
+# The INSTALL macro is the plan install and should be used to install
+# directories and non-executable files.
+#
+# The INSTALL_BIN macro is used to install executable files.
+# On other platforms, the INSTALL_BIN macro strips executables; on
+# Windows, however, stripping appears to be risky -- it may strip out
+# important relocation information, rendering the executable un-usable.
+# Thus, on this platform, no stripping is done.
+#
+# The INSTALL_DSO macro is used to install shared libraries
+# (DLL's). The macro does all the work of installing the shared
+# library (in the 'bin' directory) and the imp-lib (in the 'lib'
+# directory).
+#
+# The INSTALL_MSGCAT macro is used to install message catalog .mo files.
+#
+
+INSTALL		= $(TOOLROOT)/usr/bin/install
+INSTALL_BIN	= $(INSTALL)
+INSTALL_DSO	= \
+	$(INSTALL) -d $(DIST_ROOT)/usr/bin; \
+	$(INSTALL) -d $(DIST_ROOT)/usr/lib; \
+	$(INSTALL) $(DSO_INSTALLOPTS) \
+		-m 755 $(DSO_FULL_NAME)	$(DIST_ROOT)/usr/bin; \
+	$(INSTALL) $(DSO_INSTALLOPTS) \
+		-m 644 $(DSO_IMPLIB) $(DIST_ROOT)/usr/lib;
+
+#
+# Do nothing command that can be used with a target that should not
+# do anything. This prevents make from complaining that nothing is
+# to be done for the target.
+#
+NOOP = @echo -n
+
+#
+# Flags
+#
+# Flags to the compiler and linker consist of three major parts:
+#	Variable (V*)	- flags set on the command line (e.g. VCXXDEFS=-DJUNK)
+#	Local (L*)	- flags defined in the Makefile
+#	ISM (I*)	- flags defined in an ISM's ismdefs file
+#	Global (G*)	- flags defined in commondefs
+#
+#
+# For the compiler each major set of flags is further broken down into
+# three subparts:
+#	Definitions (*DEFS)	- flags for setting defines (e.g. -DJUNK)
+#	Options (*OPTS)		- flags for setting options (e.g. -nostdinc)
+#	Includes (*INCS)	- flags for include directory searches
+#
+
+#
+# C and C++ compiler flags moved to compiler-specific files (See above)
+#
+
+# Augment flags with settings common to all compilers
+GCDEFS += $(DASH_D)WIN32
+GCXXDEFS += $(DASH_D)WIN32
+
+GCOPTS	= $(CC_OPTIMIZER) $(CC_WARN_LEVEL) $(CC_DEPOPTS)
+
+CFLAGS	= $(COPTS) $(CDEFS) $(CINCS)
+CDEFS	= $(GCDEFS) $(ICDEFS) $(LCDEFS) $(VCDEFS)
+COPTS	= $(GCOPTS) $(ICOPTS) $(LCOPTS) $(VCOPTS)
+## CINCS moved to compiler-specific files
+
+GCXXOPTS	= $(CC_OPTIMIZER) $(CC_WARN_LEVEL) $(CC_DEPOPTS)
+
+CXXFLAGS	= $(CXXOPTS) $(CXXDEFS) $(CXXINCS)
+CXXDEFS	= $(GCXXDEFS) $(ICXXDEFS) $(LCXXDEFS) $(VCXXDEFS)
+CXXOPTS	= $(GCXXOPTS) $(ICXXOPTS) $(LCXXOPTS) $(VCXXOPTS)
+## CXXINCS moved to compiler-specific files
+
+#
+# Linker flags moved to compiler-specific files (see above)
+#
+
+LDFLAGS = $(LDOPTS) $(LDOBJS) $(LDLIBPATHS) $(LDLIBS)
+LDOPTS	= $(VLDOPTS) $(LLDOPTS) $(ILDOPTS) $(GLDOPTS)
+## LDOBJS moved to compiler-specific files
+## LDLIBPATHS moved to compiler-specific files
+## LDLIBS moved to compiler-specific files
+
+#
+# Support for building DSOs.
+#
+# To build a DSO the Makefile MUST define the following macros:
+#
+# DSO_TARGET_BASENAME	- Base name of the shared libarary without any
+#			  version numbers, prefix or suffix
+#                         (e.g. DSO_TARGET_BASENAME = foo).
+#                         This will be expanded to libfoo.so or fooxy.dll
+#                         according to the platform. (On NT, 'xy' is the
+#                         major, minor version: versioning must be built
+#                         in to the base name)
+#			  Set this macro instead of the TARGETS macro.
+#			  The 'all' target should depend upon $(DSO_TARGET)
+#			  intead of $(TARGETS)
+#                         (Note: depend on DSO_TARGET, NOT DSO_TARGET_BASENAME)
+#
+# DSO_MAJOR_VERSION	- Major version number (e.g. DSO_MAJOR_VERSION = 1).
+#
+# DSO_MINOR_VERSION	- Minor version number (e.g. DSO_MINOR_VERSION = 0)
+#
+
+# Platform-specific prefix and suffix used in naming a shared library.
+DSO_PREFIX=
+DSO_SUFFIX=dll
+
+DSO_TARGET=$(DSO_PREFIX)$(DSO_TARGET_BASENAME)$(DSO_MAJOR_VERSION)$(DSO_MINOR_VERSION).$(DSO_SUFFIX)
+DSO_IMPLIB=$(DSO_TARGET:.$(DSO_SUFFIX)=.lib)
+
+## These aren't really needed, since they are identical to DSO_TARGET. Kept
+## For consistency with other platforms
+SONAME = $(DSO_TARGET)
+DSO_FULL_NAME = $(SONAME)
+
+DSO_DIRT = $(DSO_TARGET) $(DSO_IMPLIB)
+
+# DSO_COPTS and DSO_LDOPTS moved to compiler-specific defs file
+
+#
+# I18n message catalog support.
+# -- Removed from NT version for now --
+# -- NT support for I18n TBD         --
+# -- FJaubert, May 2003              --
+
+#
+# Flags for various commands
+#
+ARFLAGS	= $(VARFLAGS) $(LARFLAGS) $(IARFLAGS) $(GARFLAGS)
+ASFLAGS	= $(VASFLAGS) $(LASFLAGS) $(IASFLAGS) $(GASFLAGS)
+LFLAGS	= $(VLFLAGS) $(LLFLAGS) $(ILFLAGS) $(GLFLAGS)
+YFLAGS	= $(VYFLAGS) $(LYFLAGS) $(IYFLAGS) $(GYFLAGS)
+
+#
+# The first target in all Makefiles must be 'all'. The following
+# are targets common to all Makefiles and are defined in
+# commonrules
+#
+# clean:	Remove all files produced by the build including
+#		the targets.
+#
+# clobber:	Same as clean (for backwards compatibility with
+#		SGI IRIX target).
+#
+# install:	First executes the 'all' target and then installs
+#		the results in the appropriate directories.
+#
+# For Makefiles that both descend into subdirectories and need to
+# process the common targets in the current directory, the common
+# targets that need to be defined in the Makefile (e.g. all) should
+# be defined with $(LOCALPREF) as the prefix (e.g. $(LOCALPREF)all).
+# $(LOCALPREF) is automatically defined when SUBDIRS os defined. In
+# addition, $(NEED_LOCAL_TARGETS) must be defined before including
+# commonrules.
+#
+COMMONTARGS	= clean \
+		  clobber \
+		  install
+
+PREFTARGS	= $(LOCALPREF)clean \
+		  $(LOCALPREF)clobber \
+		  $(LOCALPREF)install
+
+#
+# All Makefiles should have
+#
+#	include $(COMMONRULES)
+#
+# AFTER the first target is defined. If $(BOOT_ROOT) is defined,
+# we assume that we are building the ISM that contains the rules
+# themselves. So we use BOOT_ROOT as the path to the rules.
+#
+ifdef BOOT_ROOT
+COMMONRULES = $(BOOT_ROOT)/commonrules
+else
+COMMONRULES = $(LROOT)/usr/include/make/commonrules
+endif
+
+#
+# File lists
+#
+# The file lists below are combined to form the SOURCES macro
+# which lists all source files and the OBJECTS macro which lists
+# all object files built from the sources. The SOURCES macro is
+# used to determine which files are to be packaged into the
+# source tar archive and the source RPM package.
+#
+# HFILES:	C/C++ header files
+# ASFILES:	Assembly language files
+# CXXFILES:	C++ source files with .cxx, .cpp, .cc or .c++ extension
+# CFILES:	C source files
+# FFILES:	FORTRAN source files
+# LFILES:	Lex source files
+# SHFILES:	Shell script files
+# YFILES:	Yacc source files
+# PLFILES:	Perl script files
+# PMFILES:	Perl module files
+# POFILES:	GNU gettext message catalog text files
+# LSOURCES:	Any additional source files not covered by one of the
+#		macros above.
+# MKFILE:	Name of the Makefile. Default is 'Makefile'.
+#
+# Note: The file 'Makefile' is automatically included in the SOURCES macro.
+#
+SOURCES = $(HFILES) $(ASFILES) $(CXXFILES) $(CFILES) $(FFILES) \
+	  $(LFILES) $(SHFILES) $(YFILES) $(PLFILES) $(PMFILES) \
+	  $(POFILES) $(LSOURCES) $(MKFILE)
+
+## Note: OBJ_SUFFIX is compiler-dependent (gcc likes to create ".o", other
+## compilers prefer ".obj"). See compiler-specific files.
+
+## On NT, all compilers should generate .EXE executables
+## Note that because on Unix, there is no suffix at all, this variable
+## should include the "." (dot)
+EXE_SUFFIX=.exe
+
+## Just in case some source files reside in other directories -- eg:
+## ../../win32/src, make sure the objects are in the current dir
+## FIXME: not necessary if we decide to place all sources in one common
+## dir.  --FJaubert
+
+OBJECTS = \
+	  $(ASFILES:.s=.$(OBJ_SUFFIX)) \
+	  $(_CXXFILES:.cxx=.$(OBJ_SUFFIX)) \
+	  $(_CCFILES:.cc=.$(OBJ_SUFFIX)) \
+	  $(_CPPFILES:.cpp=.$(OBJ_SUFFIX)) \
+	  $(_C++FILES:.c++=.$(OBJ_SUFFIX)) \
+	  $(CFILES:.c=.$(OBJ_SUFFIX)) \
+	  $(FFILES:.f=.$(OBJ_SUFFIX)) \
+	  $(LFILES:.l=.$(OBJ_SUFFIX)) \
+	  $(YFILES:.y=.$(OBJ_SUFFIX)) 
+
+
+MKFILE = Makefile
+
+_CPPFILES = $(filter %.cpp, $(CXXFILES))
+_CXXFILES = $(filter %.cxx, $(CXXFILES))
+_CCFILES  = $(filter %.cc, $(CXXFILES))
+_C++FILES = $(filter %.c++, $(CXXFILES))
+
+#
+# Header file dependencies are automatically determined by the
+# C/C++ compiler and saved for each source file in a file by the
+# same base name with the .d suffix. These dependency files are
+# automatically included by the commonrules file.
+#
+DEPENDS = $(_CXXFILES:.cxx=.d) $(_CCFILES:.cc=.d) $(_CPPFILES:.cpp=.d) \
+	  $(_C++FILES:.c++=.d) $(CFILES:.c=.d)
+
+#
+# Build cruft
+#
+# DIRT defines those files that should be removed as part of a
+# clean. Makefiles should define LDIRT with those files that need
+# to be removed.
+#
+DIRT = $(GDIRT) $(XDIRT) $(IDIRT) $(LDIRT) $(VDIRT)
+GDIRT = *.$(OBJ_SUFFIX) $(DEPENDS) $(MSGCAT_TARGETS) a.out core lex.yy.[co] y.tab.[cho]
+
+#
+# Macros for doing cascading builds.
+#
+# Makefiles define SUBDIRS with a list of subdirectories to descend into.
+# By default, the build will look for a file named GNUmakefile,
+# makefile or Makefile in that order. If a file other than these is
+# to be used by the build, it should be listed with the directory
+# name in the SUBDIRS macro using an '@' symbol. For example:
+#
+# SUBDIRS = foo bar@Mkfile doc
+#
+# The build will use the default build file in the 'foo' and 'doc'
+# directories but will use the file 'Mkfile' as the build file in
+# the 'bar' directory.
+#
+# Define NOSUBMSG to any value to suppress the warning message for
+# subdirectories that do not exist.
+#
+_SUBDIR_MAKERULE = \
+	errstat=0; \
+	_dir=$${d%%@*}; \
+	mfile=$${d\#\#*@}; \
+	if [ ! -d $$_dir ]; then \
+	    if [ "$(NOSUBMSG)" = "" ]; then \
+		echo "SKIPPING $$_dir: No such directory"; \
+	    fi \
+	else \
+	    echo "---- $(_SUBDIR_PATH)$$_dir - $(MAKE) $$targ"; \
+	    if [ "$$mfile" = "$$d" ]; then \
+	        $(MAKEF) -C $$_dir _SUBDIR_PATH=$(_SUBDIR_PATH)$$_dir/ $$targ \
+			|| errstat=$$?; \
+	    else \
+	        $(MAKEF) -f $$mfile -C $$_dir MKFILE=$$mfile \
+			_SUBDIR_PATH=$(_SUBDIR_PATH)$$_dir/ $$targ \
+			|| errstat=$$?; \
+	    fi ; \
+	fi; \
+	test $$errstat -eq 0
+
+SUBDIRS_MAKERULE = \
+	@errstat=0; \
+	targ=$@; for d in $(SUBDIRS); do $(_SUBDIR_MAKERULE) || break; done; \
+	test $$errstat -eq 0
+
+SUBDIR_MAKERULE = \
+	@targ="all"; d=$@; $(_SUBDIR_MAKERULE) || exit $$errstat
+
+#
+# Macros for doing version builds (e.g. a debug and non-debug version
+# in separate directories). Makefiles define VERSIONS with a list of
+# subdirectories to descend into. Each subdirectory represents a different
+# version of the program to build. Define NOSUBMSG to any value to supress
+# the warning message for subdirectories that do not exist. Normally, all
+# versions are built but if PREF_VERSION is defined, only that version
+# is built.
+#
+# Each version will be built with CUR_VERSION automatically set to the
+# currently building version. This allows the Makefile for each version
+# to use CUR_VERSION for version-specific processing.
+#
+_VERSION_MAKERULE = \
+	verrstat=0; \
+	ver=$${d%%@*}; \
+	mfile=$${d\#\#*@}; \
+	if [ ! -d $$ver ]; then \
+	    if [ "$(NOSUBMSG)" = "" ]; then \
+		echo "SKIPPING $$ver; No such version directory"; \
+	    fi \
+	else \
+	    echo "=== version $$ver - $(MAKE) $$targ"; \
+	    if [ "$$mfile" = "$$d" ]; then \
+	        $(MAKEF) -C $$ver $(VERMAKEFLAGS) CUR_VERSION=$$ver $$targ || \
+						verrstat==$$?; \
+	    else \
+	        $(MAKEF) -f $$mfile -C $$ver $(VERMAKEFLAGS) MKFILE=$$mfile \
+			CUR_VERSION=$$ver $$targ || verrstat==$$?; \
+	    fi; \
+	fi; \
+	test $$verstat -eq 0
+
+ifdef PREF_VERSION
+VERSIONS_MAKERULE = \
+	@targ=$@; d=$(PREF_VERSION); $(_VERSION_MAKERULE)
+else
+VERSIONS_MAKERULE = \
+	@verrstat=0; \
+	targ=$@; for d in $(VERSIONS); do $(_VERSION_MAKERULE) || break; \
+	done; \
+	test $$verrstat -eq 0
+endif
+
+VERSION_MAKERULE = \
+	@targ="all"; d=$@; $(_VERSION_MAKERULE)
+
+
+endif

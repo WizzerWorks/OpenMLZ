@@ -1,0 +1,252 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlDIQueue 3dm
+.SH NAME
+mlDIQueue: mlDIQueueCreate, mlDIQueueDestroy, mlDIQueuePushMessage, mlDIQueueNextMessage, mlDIQueueUpdateMessage, mlDIQueueAdvanceMessage, mlDIQueueAbortMessages, mlDIQueueReturnEvent, mlDIQueueReceiveMessage, mlDIQueueGetSendCount, mlDIQueueGetReceiveCount, mlDIQueueGetReplyCount, mlDIQueueGetEventCount, mlDIQueueGetSendWaitable, mlDIQueueGetReceiveWaitable, mlDIQueueGetDeviceWaitable \- queue functions used by device-dependent ML modules.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml_didd.h>\f1
+.sp .8v
+\f3
+MLstatus MLAPI mlDIQueueSize(MLqueueOptions* pOpt, MLint32 *retSize);
+
+MLstatus MLAPI mlDIQueueCreate(MLbyte* preallocSpace,
+                               MLint32 preallocSize,
+                               MLqueueOptions* pOpt,
+			       MLqueueRec** pQueue);
+
+MLstatus MLAPI mlDIQueueDestroy(MLqueueRec* pQueue);
+
+MLstatus MLAPI mlDIQueuePushMessage(MLqueueRec* pQueue, 
+				    MLint32 messageType,
+                                    MLpv* message,
+                                    MLbyte* ddData, 
+                                    MLint32 ddDataSize, 
+                                    MLint32 ddDataAlignment);
+
+MLstatus MLAPI mlDIQueueSendDeviceEvent(MLqueueRec* pQueue, 
+				    MLint32 messageType);
+
+MLstatus MLAPI mlDIQueueNextMessage(MLqueueRec* pQueue, 
+                                    MLqueueEntryRec** pEntry
+                                    MLint32 *messageType,
+				    MLpv** message,
+                                    MLbyte** ddData,
+                                    MLint32* ddDataSize);
+
+MLstatus MLAPI mlDIQueueUpdateMessage(MLqueueRec* pQueue, 
+                                      MLqueueEntryRec* pEntry
+			              MLint32 newMessageType);
+
+MLstatus MLAPI mlDIQueueAdvanceMessages(MLqueueRec* pQueue);
+
+MLstatus MLAPI mlDIQueueAbortMessages(MLqueueRec* pQueue);
+
+MLstatus MLAPI mlDIQueueReturnEvent(MLqueueRec* pQueue, 
+                    		    MLint32 messageType,
+				    MLpv* message);
+
+MLstatus MLAPI mlDIQueueReceiveMessage(MLqueueRec* pQueue, 
+				       MLint32 messageType,
+				       MLpv** message,
+				       MLbyte** ddData,
+                                       MLint32* ddDataSize);
+
+MLint32 MLAPI mlDIQueueGetSendCount(MLqueueRec* pQueue);
+
+MLint32 MLAPI mlDIQueueGetReceiveCount(MLqueueRec* pQueue);
+
+MLint32 MLAPI mlDIQueueGetReplyCount(MLqueueRec* pQueue);
+
+MLint32 MLAPI mlDIQueueGetEventCount(MLqueueRec* pQueue);
+
+MLwaitable MLAPI mlIDQueueGetSendWaitable(MLqueueRec* pQueue);
+
+MLwaitable MLAPI mlIDQueueGetReceiveWaitable(MLqueueRec* pQueue);
+
+MLwaitable MLAPI mlIDQueueGetDeviceWaitable(MLqueueRec* pQueue);
+.fi
+.SH PARAMETER
+.TP 16
+\f2pOpts\f1
+Options from opening a new device.  These include queue creation
+options.
+.TP
+\f2size\f1
+The size of the entire queue area (in bytes).  This is useful, if
+you wish to allocate your own memory for the queues.
+.TP
+\f2preallocatedSpace\f1
+A pointer to preallocated space, this may be NULL if you wish the
+DI layer to allocate memory for the queue.  If is is not null,
+then you must have previously allocated memory (use 
+mlDIQueueComputeSize to determine how much).  That memory
+must be aligned on an 8-byte boundary.
+.TP
+\f2pQueue\f1
+Pointer to opaque structure used by the DI layer to store information
+related to this particular queue.
+.TP
+\f2messageType\f1
+The type of the message, defined in mldefs.h
+.TP
+\f2message\f1
+A ML message (array of MLpv's, where the last entry is ML_END).
+.TP
+\f2ddData\f1
+Pointer to device-dependent data to be appended to the message.
+May be NULL if there is no device-dependent data.
+.TP
+\f2ddDataSize\f1
+Size of device-dependent data in bytes.
+Must be 0 if there is no device-dependent data and non-zero otherwise.
+.TP
+\f2ddDataAlignment\f1
+Alignment requirements for device-dependent data.  A value of 1 indicates
+no alignment constraints, a value of 4 indicates 4-byte alignment, 
+a value of 8, indicates 8-byte alignment is required.
+.TP
+\f2pQueue\f1
+Pointer to opaque structure used by the DI layer to store information
+related to this particular queue entry.
+.TP
+\f2newMessageType\f1
+This will be used to overwrite the existing messageType (the existing
+type was specified when it was first enqueued, this new type will
+be visible when the receiveMessage call is made).
+.P
+
+.SH DESCRIPTION
+
+These routines should be called from within a module's device-dependent 
+routines.  (Pointers to those routines were passed to the DI layer 
+by the module's \f3ddConnect\f1(3dm) routine.)
+
+\f3mlDIQueueCreate\f1 creates a ML queue for communication between
+an application and a device.  That queue includes a send fifo (for
+message headers going to the device), a receive fifo (for message
+headers going back to the application), a message payload area (to
+hold the contents of messages in-flight) and an event area (to hold
+the contents of events in-flight).  If the preallocatedSpace pointer
+is NULL, the memory for the queue is allocated automatically.  If you
+prefer to allocate your own memory, then first call
+\f3mlDIQueueComputeSize\f1 to find how much space is needed, allocate
+that much memory, and then call \f3mlDIQueueCreate\f1, passing in a
+pointer to your preallocated memory.
+
+Note: preallocated space is not currently supported. The
+preallocatedSpace pointer should always be set to NULL.
+
+\f3mlDIQueueDestroy\f1 destroys the queue and frees any allocated
+resources.  If memory was allocated in the \f3mlDIQueueCreate\f1, then
+it is released during this call.  Note that if you manually allocated
+memory for the queue (passing in a non-NULL pointer to
+\f3mlDIQueueCreate\f1), then you are responsible for freeing that
+memory after \f3mlDIQueueDestroy\f1 returns.
+
+\f3mlDIQueuePushMessage\f1 pushes a message from the application onto
+the queue (placing the body of the message in the message payload, and
+a header on the send fifo).  In can optionally append device-dependent
+data with specified size and alignment.  Use this in your sendControls
+and sendBuffers routines.
+
+\f3mlDIQueueSendDeviceEvent\f1 pushes a private device-dependent message
+onto the queue to the device.  This event is consumed as the device 
+advances the queue, and is not visible to the application.  It is useful
+for private communication within your device-dependent module.
+
+\f3mlDIQueueNextMessage\f1 returns pointers to the oldest unread
+message on the application's send fifo.  When your device is ready
+to work on a new message from the queue, call this function to look
+at the message (and any device-dependent data appended to it).  This
+function has a side-effect of marking the message read, so the next
+call to \f3mlDIQueueNextMessage\f1, will return a pointer to the 
+following message.   It is acceptable to start working on
+later messages, before you have completed earlier ones, with the
+caveat that it must always appear to the application that messages
+were processed strictly in order.
+
+\f3mlDIQueueUpdateMessage\f1 marks a queue entry as having been
+processed and updates the message type.  Use this when you're finished
+working on a message.  Note that this does not return the completed
+message to the application, it merely marks it as completed so that it
+will be moved during a later call to \f3mlDIQueueAdvanceMessages\f1.
+
+\f3mlDIQueueAdvanceMessages\f1 looks at the fifo going to the device,
+removes any processed messages and pushes them onto the fifo going
+back to the application.  Use this when you have processed one or
+more messages, and wish to return the results to the application.
+
+\f3mlDIQueueAbortMessages\f1 pops every remaining message header
+from the fifo going to the device, updates the message types to mark them
+as having been aborted, and pushes the result onto the fifo going back
+to the application.  Use this when you need to abort a transfer.
+
+\f3mlDIQueueReturnEvent\f1 pushes an event from the device onto the
+queue (placing the body of the event in the event area, and a header
+on the application's receive fifo).  Use this when, in the process of
+doing work, you notice an event for which the application has
+requested notification.
+
+\f3mlDIQueueReceiveMessage\f1 pops any old (previously-read) message,
+and returns the top (oldest) message on the application's receive
+queue.  In addition, it returns a pointer to any device-dependent
+data which was appended to that message.  Use this in your receiveMessage 
+function.
+
+\f3mlDIQueueGetSendCount\f1 returns the number of items in the
+queue from application to device.
+
+\f3mlDIQueueGetReceiveCount\f1 returns the number of items
+(both replies and events) in the queue between device and application.
+
+\f3mlDIQueueGetReplyCount\f1 returns the number of replies in the 
+queue between device and application.
+
+\f3mlDIQueueGetEventCount\f1 returns the number of events in the 
+queue between device and application.
+
+\f3mlDIQueueGetSendWaitable\f1 returns a ML waitable (a
+file descriptor in Unix implementations).  This will fire whenever
+there are more than N slots free in the queue between application
+and device.  It is used by applications which wish to enqueue
+messages in chunks.  The setting for N is specified at open time
+via the ML_OPEN_SEND_SIGNAL_COUNT parameter.
+
+\f3mlDIQueueGetReceiveWaitable\f1 returns a waitable which will
+fire whenever there is an unread message on the queue from the
+device back to the application.  Applications may wait on this,
+rather than polling for replies from the device.
+
+\f3mlDIQueueGetDeviceWaitable\f1 returns a waitable which will
+fire whenever there is an unread message on the queue from the
+application to the device.  This is convenient for software
+devices which wish to be awaken whenever there is new data to
+be processed.
+
+.SH NOTES
+
+The queuing code assumes a single application thread pushing
+and receiving messages, and a separate single device thread
+processing messages and generating replies.   It has been
+carefully constructed so that no locking is necessary between
+reader and writer threads for that case.   If you choose
+to have more than one application thread, or more than one
+device thread, then you must implement locking around all
+queueing functions.
+
+The queueing functions described in this man page are user-level
+calls, but equivalent kernel-level calls may be available in
+some implementations.  It is acceptable to allocate memory for
+the queue, map it into both user and kernel space, then access
+it using these functions in user space and the kernel functions
+in kernel space.  Note that such an implementation is still
+subject to the threading constraint mentioned above.
+
+.SH SEE ALSO
+mlDIIntro(3dm),
+ddInterrogate(3dm).
+ddConnect(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,45 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlEndTransfer 3dm
+.SH NAME
+mlEndTransfer \- end a continuous media transfer
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlEndTransfer(MLopenid openid);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media path or transcoder.
+.SH DESCRIPTION
+Ends a continuous transfer on the specified path or transcoder.
+This call
+advises the device to stop processing buffers and abort any remaining messages on its input queue.
+This is a blocking call.
+It does not return until transfers have
+stopped and any messages remaining on the device input queue have been
+aborted and flushed to the device output queue.
+Calling EndTransfer on a device which has not begun transfers is legal
+(it still causes the queue to be flushed).
+Any messages which are flushed will be marked to indicate they were
+aborted.
+Buffer messages are marked ML_BUFFERS_ABORTED, while
+controls messages are marked ML_CONTROLS_ABORTED or
+ML_QUERY_CONTROLS_ABORTED.
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+the device agreed to end transfer on the path.
+.TP
+ML_STATUS_INVALID_IN
+The specified open device handle is invalid.
+.SH SEE ALSO
+mlEndTransfer(3dm),
+mlOpen(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,4 @@
+#!/bin/sh
+find ../.. -name "ml*.h" -print -exec cp \{\} d:/source/include/ML \;
+find ../.. -name "getopt.h" -print -exec cp \{\} d:/source/include/ML \;
+

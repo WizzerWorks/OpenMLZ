@@ -1,0 +1,110 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlSendBuffers 3dm
+.SH NAME
+mlSendBuffers \- send buffers to a digital media object
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlSendBuffers(MLopenid openid, MLpv* buffers);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media object.
+.TP
+\f2buffers\f1
+list of parameter/value (MLpv) pairs.
+
+.SH DESCRIPTION
+
+Sends a message containing a list of buffers to a previously-opened
+digital media device.
+These buffers are enqueued on the send queue in
+sequence with any other messages to that device.
+All the buffers
+within a single message are considered to apply to the same point in
+time.
+For example, a single buffers message could contain image,
+audio, VITC and EDH buffers, each specified with its own buffer parameter in the
+buffers message.
+
+As each message is processed by the path, a reply message
+will be enqueued for return to the application.
+By examining that
+reply, the application may obtain the result of attempting to process
+the buffers.
+
+A successful return value guarantees only that the requested buffers
+have been enqueued to the device.
+(Enqueueing requires a copy operation
+so the application is free to delete/alter the message array as soon
+as the call returns).
+Any error return value indicates the buffers
+have not been enqueued and will thus have no effect.
+
+A buffer is designated by a MLpv parameter of class ML_CLASS_BUFFER
+whose value is a POINTER type.
+The memory for the buffers is
+designated by the POINTER value, and is always owned by the
+application.
+However, after a buffer has been sent, it is on loan to
+the system and must not be touched by the application.
+After the
+buffer has been returned via ReceiveMessage, then the application is
+again free to delete and/or modify it.
+
+When sending a buffer to be output, the application must set the
+buffer length to indicate the number of valid bytes in the buffer.
+In this case maxLength is ignored by the device (it doesn't matter
+how much larger the buffer may be, since the device won't read past
+the last valid byte).
+
+When sending a buffer to be filled (on input) the application must set
+the buffer maxLength to indicate the maximum number of bytes which may
+be written by the device.
+As the device processes the buffer, it will
+write no more than maxLength bytes and then set the returned length to
+indicate the last byte written.
+The maxLength is returned without change.
+
+It is acceptable to send the same buffer multiple times.
+It is
+also acceptable to send no buffer (in this case the transfer still occurs,
+but the resulting data on input is simply discarded).
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The buffers message was enqueued successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified device handle is invalid.
+.TP
+ML_STATUS_SEND_QUEUE_OVERFLOW
+There was not enough space on the path send queue
+for this latest message.
+Try again later after the device
+has had time to catch up, or specify a larger queue size
+on open.
+.TP
+ML_STATUS_RECEIVE_QUEUE_OVERFLOW
+There is not currently enough space on the receive
+queue to hold the reply to this message.
+Read some
+replies from the receive queue and then try to send
+again, or specify a larger queue size on open.
+
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm),
+mlReceiveMessage(3dm),
+mlSendControls(3dm),
+mlIntro(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,307 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlAudioParameters 3dm
+.SH NAME
+mlAudioParameters \- Digital Media audio parameters
+.SH DISCUSSION
+.P
+The complete processing of an audio path is described by two
+sets of parameters:  Those which describe how to interpret/generate the signal as
+it arrives/leaves, and those which describe how to write/read the resulting bits to/from memory.
+	
+That audio buffer may be the source for an audio output path or the
+destination for an audio input path.
+A stream of audio buffers is described via
+control parameters passed to the device using mlSetControls(3dm) or mlSendControls(3dm).
+Each individual audio buffer is then sent using mlSendBuffers(3dm). An audio buffer is a collection of sample frames. A sample frame is a set of audio samples that are coincident in time. A sample frame for mono data is a single sample. A sample frame for stereo data consists of two samples.
+.P
+.SH BASE AUDIO CONTROL PARAMETERS
+
+These parameters are defined by all audio devices which support the Base
+Audio Extension.
+
+.SH AUDIO PATH CONTROL PARAMETERS
+The path control parameters are set immediately in a call to
+mlSetControls(3dm), queried immediately using
+mlGetControls(3dm), or sent on a path in a call to
+mlSendControls(3dm).
+Once set, these controls are
+persistent for at least the life of the path.
+Typically, an
+application will set several controls in a single message
+before beginning to process any buffers.
+.P
+.TP 6
+ML_AUDIO_SAMPLE_RATE_REAL64
+The sampling rate of the audio data.
+Units are frames per second.
+Values are
+dependent on the hardware, but are usually between 8000.0 and 48000.0.
+Default is hardware-specific.
+.TP
+ML_AUDIO_PRECISION_INT32
+The maximum width in bits for the audio data at the input or output jack.
+For example,
+a value of 16 indicates a 16-bit audio signal.
+Query only.
+.TP
+ML_AUDIO_GAINS_REAL64_ARRAY
+The gain, in decibels (dB), for each audio channel on the given path.
+Positive values represent gain; negative values represent attenuation.
+Unsupported gain values will be rounded down to the nearest supported
+value.  A floating-point value of negative infinity is used to indicate
+infinite attenuation.
+.P
+.SH AUDIO FORMAT CONTROL PARAMETERS
+These controls define the interpretation of raw bytes in
+memory as frames of audio data.
+.TP 6
+ML_AUDIO_CHANNELS_INT32
+The number of channels of audio data in the buffer.
+Multiple-channel audio data is always
+stored interleaved, with the samples for each consecutive audio channel following one another
+in sequence.
+For example, a 4-channel audio stream will have the form:
+.sp .8v
+\f2123412341234\f1...
+.sp .8v
+Where \f21\f1 is the sample for the first audio channel, \f22\f1 is the sample for the second
+audio channel, and so forth.
+
+Common values are:
+ML_CHANNELS_MONO,
+ML_CHANNELS_STEREO,
+ML_CHANNELS_4,
+ML_CHANNELS_8.
+Default is hardware-specific.
+.TP
+ML_AUDIO_FORMAT_INT32
+Specifies the manner in which audio samples are stored in memory.
+The interpretation of format values is:
+
+ML_AUDIO_FORMAT_{\f2type\f1}{\f2bits\f1}
+
+{\f2type\f1} 'U' for unsigned integer samples, 'S' for signed (2's complement) integer samples, 'R' for real (floating point) samples.
+
+{\f2bits\f1} is the number of significant bits per sample.
+
+For sample formats in which the number of significant bits is less than the number of bits
+in which the sample is stored, an additional suffix of the form
+
+in{\f2size\f1}{\f2alignment\f1}
+
+is appended.
+
+{\f2size\f1} is the size of the actual sample in memory, in bits.
+
+{\f2alignment\f1} is either 'R' or 'L' depending on whether the significant bits are right- or
+left-shifted within the sample.
+
+For example, here are three of the most common audio formats:
+
+.TS
+;
+l l.
+	\f47 char 0\f1
+\f3Format\f1	\f4+------+\f1
+\f2U8\f1	\f4iiiiiiii\f1
+.TE
+.DT
+
+.TS
+;
+l l.
+	\f415  short int  0\f1
+\f3Format\f1	\f4+--------------+\f1
+\f2S16\f1	\f4iiiiiiiiiiiiiiii\f1
+.TE
+.DT
+
+.TS
+;
+l l.
+	\f431         int         0\f1
+\f3Format\f1	\f4+----------------------+\f1
+\f2S24in32R\f1	\f4ssssssssiiiiiiiiiiiiiiii\f1
+.TE
+.DT
+
+Where \f4s\f1 indicates sign-extension and \f4i\f1 indicates the actual
+component information.
+Note that the bit locations refer to the locations
+when the 8-, 16, or 32-bit sample has been loaded into
+a register as an integer quantity.
+
+If the audio compression is not set to ML_COMPRESSION_UNCOMPRESSED, the
+format parameter indicates the data type of the uncompressed samples.
+Common formats are
+ML_AUDIO_FORMAT_U8,
+ML_AUDIO_FORMAT_S8,
+ML_AUDIO_FORMAT_S16,
+ML_AUDIO_FORMAT_S24in32R,
+ML_AUDIO_FORMAT_R32.
+Default is hardware-specific.
+.P
+.TP
+ML_AUDIO_FRAME_SIZE_INT32
+The size of an audio sample frame in bytes.  Query only.
+
+.TP
+ML_AUDIO_COMPRESSION_INT32
+In case the audio data is in compressed form, this parameter specifies the compression format. The compression format may be an industry standard such as MPEG-1 audio, or it may be no compression at all.
+Common values are:
+ML_COMPRESSION_UNCOMPRESSED (default)
+
+.SH AUDIO PATH BUFFER
+This parameters provides the source or destination data for processing
+a fragment of a media stream.
+For audio signals, a fragment typically
+corresponds to between .01 and 1.0 seconds of audio data.
+.TP 6
+ML_AUDIO_BUFFER_POINTER
+A pointer to the first byte of an in-memory audio buffer.
+The buffer address
+must comply with the alignment constraints for buffers on the particular
+path to which it is being sent.
+(See mlGetCapabilities(3dm) for details of determining alignment requirements).
+.P
+.SH AUDIO PATH BUFFER PARAMETERS
+These parameters may be sent to a audio path along with a buffer, using the
+mlSendBuffers(3dm) call.
+They are processed with the buffer.
+.TP 6
+ML_AUDIO_UST_INT64
+The universal system time (UST) for the most recently
+processed frame (sample) in the audio stream.
+Typically, an
+application will pass sendBuffers a message containing
+a ML_AUDIO_BUFFER, a ML_AUDIO_MSC and a ML_AUDIO_UST.
+Each message is processed as a single unit, and a
+reply is returned to your application via
+mlReceiveMessage(3dm).
+That reply will contain the
+completed buffer and the UST/MSC corresponding to the
+time at which the data in that buffer passes through
+the jack.
+Note that, due to hardware buffering on
+some hardware, it is actually possible to receive a reply
+message slightly before the data has finished flowing
+through the jack.
+.TP 6
+ML_AUDIO_MSC_INT64
+The media stream count (MSC) of the most recently processed audio frame (sample).
+.P
+.SH SGI IRIX AUDIO PARAMETERS
+These parameters are defined by any audio device which supports the SGI IRIX AUDIO
+Extension.
+.SH AUDIO PATH CONTROL PARAMETERS
+.TP 6
+ML_AUDIO_CLOCK_GEN_INT32
+The clock-generator this device is using to provide its
+sample-rate.
+mlPvGetCapabilities(3dm) returns the set of
+clock-generators available to the device.
+.TP
+ML_AUDIO_SAMPLE_RATE_NUMERATOR_INT32
+.TP
+ML_AUDIO_SAMPLE_RATE_DENOMINATOR_INT32
+These two parameters specify the audio sampling rate, represented as an
+exact fraction (NUMERATOR/DENOMINATOR) of the master clock.
+The value of
+(NUMERATOR/DENOMINATOR) must lie between
+0 and 1.
+If the exact fraction given cannot be
+supported, the device will substitute a nearby fraction.
+.TP
+ML_AUDIO_JITTER_INT32
+.TP
+ML_AUDIO_MASTER_CLOCK_INT32
+.TP
+ML_AUDIO_GAIN_REFERENCE_INT32
+.TP
+ML_AUDIO_VIDEO_SYNC_INT32
+.TP
+ML_AUDIO_SUBCODE_FRAMESIZE_INT32
+Indicates the number of bytes into which a
+single channel of subcode data will fit.
+This value is
+often used in conjunction with ML_AUDIO_SUBCODE_CHANNELS_INT32 to
+determine sizing for memory allocation.
+For AES subcode,
+this value is 24, as defined by the IEC958/AES3
+specifications for the transmission of digital audio
+signals.
+For ADAT subcode, this value is 4.
+.TP
+ML_AUDIO_SUBCODE_FORMAT_INT32_ARRAY
+The set of subcode data formats supported by the device.
+Values can be ML_AUDIO_FORMAT_AES_CHANNEL_STATUS, ML_AUDIO_FORMAT_AES_USER,
+and ML_AUDIO_FORMAT_AES_VALIDITY.
+Subcode data streams describe distinct
+channels of continuous non-audio data that are inherently
+associated with a digital audio stream.
+Query only.
+.TP
+ML_AUDIO_SUBCODE_CHANNELS_INT32
+The number of subcode channels supported by
+a device for all subcode formats.
+This value when
+multiplied by the value provided by ML_AUDIO_SUBCODE_FRAMESIZE_INT32
+gives the size, in bytes of an entire multi-channel frame
+of subcode data.
+.TP
+ML_AUDIO_AES_CHANNEL_STATUS_BYTE_ARRAY
+.TP
+ML_AUDIO_AES_USER_BYTE_ARRAY
+.TP
+ML_AUDIO_AES_VALIDITY_BYTE_ARRAY
+These three parameters provide a means for a quick get or set of
+subcode data.
+They are not intended for real-time use.
+For input devices, these parameters are query only and the
+returned vector of bytes is most recently captured full
+multi-channel subcode frame corresponding to the subcode
+data format parameter.
+For output devices, these
+parameters may have either get/set or get-only
+capabilities (depending on hardware -- use
+mlPvGetCapabilities(3dm) to check) and indicate the default
+multi-channel subcode frame to be transmitted.
+
+Subcode data bit ordering always puts subcode Byte 0, bit
+0 in the most significant bit of Byte 0, thus allowing a
+big-endian bit shift operation to correspond to a subcode
+data time shift.
+See the IEC958 "Digital Audio
+Interface" and AES3-1992 "Serial Transmission Format For
+Two-Channel Linearly Represented Audio Data"
+specifications for the details on what the AES subcode
+data bits actually represent.
+.P
+.SH OSS AUDIO PARAMETERS
+These parameters are defined by any audio device which supports the OSS AUDIO
+Extension.
+.P
+.SH EXAMPLES
+Here is an example that sets the audio format, channel count and sampling rate for CD-quality audio:
+.nf
+.sp .8v
+MLpv message[4];
+message[0].param = ML_AUDIO_CHANNELS_INT32;
+message[0].value.int32 = ML_CHANNELS_STEREO;
+message[1].param = ML_AUDIO_FORMAT_INT32;
+message[1].value.int32 = ML_AUDIO_FORMAT_S16;
+message[2].param = ML_AUDIO_SAMPLE_RATE_REAL64;
+message[2].value.real64 = 44100.0;
+message[3].param = ML_END;
+mlSetControls(device, message);
+.br
+.fi
+.SH SEE ALSO
+mlquery(1),
+mlGetCapabilities(3dm),
+mlPvGetCapabilities(3dm),
+mlSendControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

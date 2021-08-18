@@ -1,0 +1,50 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlGetVersion 3dm
+.SH NAME
+mlGetVersion \- get the version number for the ML library
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlGetVersion(MLint32* majorVersion, MLint32* minorVersion);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2majorVersion\f1
+the resulting major version number.
+.TP
+\f2minorVersion\fP
+the resulting minor version number.
+
+.SH DESCRIPTION
+
+Use to obtain the version number for the ML library.
+The major
+version number is the first digit in the version, for example, the 2.0
+release will have a major number of 2 and a minor number of 0.
+Changes in major numbers indicate a potential incompatibility, while
+changes in minor numbers indicate small backward-compatible
+enhancements.
+Within a particular major version, all the minor
+version numbers will start at 0 and increase monotonically.
+
+Note that this is the version number of the ML core library, the
+version numbers for device-dependent modules are available in the
+capabilities list for each physical device.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The version numbers were obtained successfully.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+At least one of the pointers passed in is invalid.
+
+.SH SEE ALSO
+mlGetCapabilities(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

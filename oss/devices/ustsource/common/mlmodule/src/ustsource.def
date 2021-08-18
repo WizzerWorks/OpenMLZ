@@ -1,0 +1,10 @@
+; ustsource.def : Declares the module parameters for the DLL.
+
+LIBRARY      "ustsource10"
+DESCRIPTION  'OpenML ustsource MLmodule Windows Dynamic Link Library'
+
+EXPORTS
+ddInterrogate
+ddConnect
+ddGetUST
+

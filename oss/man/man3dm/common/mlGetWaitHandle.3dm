@@ -1,0 +1,65 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlGetWaitHandle 3dm
+.SH NAME
+mlGetWaitHandle: mlGetSendWaitHandle, mlGetReceiveWaitHandle \- get an event handle
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlGetSendWaitHandle(MLopenid openid,
+           MLwaitable* WaitHandle);
+MLstatus mlGetReceiveWaitHandle(MLopenid openid,
+           MLwaitable* WaitHandle);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openid\f1
+a previously-opened digital media object.
+.TP
+\f2WaitHandle\fP
+resulting waitable.
+
+.SH DESCRIPTION
+
+Returns an event handle on which an application may wait.
+On IRIX and Linux, MLwaitable is a file descriptor for use in select().
+On NT, MLwatiable is a HANDLE which may be used in the win32 functions
+WaitForSingleDevice or WaitForMultipleDevices.
+
+The send queue handle is signaled whenever the device dequeues a
+message and the message count drops below a preset level (settable by
+a parameter specified when the object was opened).
+Thus, if the send
+queue is full, an application may wait on this handle for notification
+that space is available for additional messages.
+
+The receive queue handle is signaled whenever the device enqueues a
+reply message.
+Thus, if the receive queue is empty, the application
+may wait on this handle for notification that additional reply
+messages are ready.
+
+The returned handles were created when the device was opened and are
+automatically destroyed when the path is closed.
+
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The wait handle was obtained successfully.
+.TP
+ML_STATUS_INVALID_ID
+The specified open device handle is invalid.  In this case
+the return wait handle argument is not changed.
+
+.SH SEE ALSO
+mlClose(3dm),
+mlOpen(3dm),
+mlReceiveMessage(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

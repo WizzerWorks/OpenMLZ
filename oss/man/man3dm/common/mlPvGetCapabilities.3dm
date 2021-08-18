@@ -1,0 +1,142 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlPvGetCapabilities 3dm
+.SH NAME
+mlPvGetCapabilities \- return ML capabilities list for a parameter
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3MLstatus mlPvGetCapabilities(MLint64 objectId, MLint64 parameterId,\f1
+\f3           MLpv** capabilities);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2objectId\f1
+the 64-bit unique identifier for the object whose parameter is being queried.
+An example is the openId returned from a call to \f3dmOpen\f1.
+.TP
+\f2parameterId\f1
+the 64-bit unique identifier for the parameter whose capabilities are being queried.
+An example is ML_IMAGE_WIDTH_INT32.
+.TP
+\f2capabilities\f1
+pointer to the head of the resulting capabilities list.
+This list should be treated as read-only by the application.
+When done, call mlFreeCapabilities.
+
+.SH DESCRIPTION
+Use to obtain the device-dependent capabilities of a parameter.
+The resulting capabilites list is returned as a
+pointer to the head of that list.
+It may be read, but not
+altered by the application.
+When finished with the list, call
+mlFreeCapabilities.
+
+As a convenience, you may call this function with either a static
+id (obtained from a previous call to \f3dmGetCapabilities\f1)
+or an open id (obtained by calling \f3dmOpen\f1).
+Querying the capabilities
+on an opened object is identical to querying the capabilities of the
+corresponding static object.
+
+It is also possible to get the capabilities of the capabilities
+parameters themselves.  Those parameters are not tied to any
+particular object and so the \f2objectId\f1 should be 0.
+
+The returned list contains the following parameters (not
+necessarily in this order):
+
+.TS
+center;
+l l l .
+Parameter	Type	Description
+_
+ID	INT64	Resource Id for this parameter.
+NAME	BYTE_ARRAY	NULL-terminated ASCII name of
+		this parameter.  This is identical to the
+		enumerated value.  For example, if the
+		value is ML_XXX, then the name is
+		"ML_XXX".
+PARENT_ID	INT64	Resource Id for the logical device
+		(jack, path, transcoder, or pipe) on
+		which this parameter is used.
+PARAM_TYPE	INT32	Type of this parameter:
+		ML_TYPE_INT32
+		ML_TYPE_INT32_POINTER
+		ML_TYPE_INT32_ARRAY
+		ML_TYPE_INT64
+		ML_TYPE_INT64_POINTER
+		ML_TYPE_INT64_ARRAY
+		ML_TYPE_REAL32
+		ML_TYPE_REAL32_POINTER
+		ML_TYPE_REAL32_ARRAY
+		ML_TYPE_REAL64
+		ML_TYPE_REAL64_POINTER
+		ML_TYPE_REAL64_ARRAY
+		ML_TYPE_BYTE_POINTER
+		ML_TYPE_BYTE_ARRAY
+PARAM_ACCESS	INT32	Access controls for this parameter.
+		Bitwise "or" of the following flags:
+		ML_ACCESS_READ
+		ML_ACCESS_WRITE
+		ML_ACCESS_IMMEDIATE (use in set/get)
+		ML_ACCESS_QUEUED (use in send/query)
+		ML_ACCESS_DURING_TRANSFER
+		ML_ACCESS_PASS_THROUGH (ignored by
+		device)
+PARAM_DEFAULT	same type	Default value for this parameter of type
+	as param	ML_PARAM_TYPE.  (This parameter may be
+		of length 0 if there is no default).
+PARAM_MINS	array of	Array of minimum values for this
+	same type	parameter (may be missing if there are no
+	as param	specified minimum values).  Each set of
+		min/max values defines one allowable
+		range of values.  If min==max then the
+		allowable range is a single value.  If the
+		array is of length one, then there is only
+		one legal range of values. (may be of
+		length 0 if there are no specified
+		minimum values).
+PARAM_MAXS	array of	Array of maximum values for this
+	same type	parameter (may be of length 0 if there are
+	as param	no specified maximum values).  There is
+		one entry in this array for each entry in
+		the mins array.
+PARAM_INCREMENT	same type	Legal param values go from min to max
+	as param	in steps of increment.  (may be of length
+		0 if there is no increment).
+PARAM_ENUM_VALUES	same type	Array of enumerated values for this
+	as param	parameter (may be of length 0 if there are 	
+		no enumeration values).
+PARAM_ENUM_NAMES	BYTE_ARRAY	Array of enumeration names for this
+		parameter (must have one entry for each
+		element in the values array).  The array
+		is an ASCII C string with each entry
+		separated by commas.  The name of each
+		enum is literally the name of the enum.
+		For example, ML_DIRECTION_IN is
+		"ML_DIRECTION_IN".
+.TE
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The call was successful.
+.TP
+ML_STATUS_INVALID_ID
+The specified object id was invalid.
+.TP
+ML_STATUS_INVALID_ARGUMENT
+The capabilities pointer is invalid.
+.TE
+.SH SEE ALSO
+mlFreeCapabilities(3dm),
+mlGetCapabilities(3dm),
+mlOpen(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

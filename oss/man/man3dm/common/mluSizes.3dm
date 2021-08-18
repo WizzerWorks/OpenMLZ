@@ -1,0 +1,198 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mluSizes 3dm
+.SH NAME
+mluSizes: mluGetImageBufferSize, mluComputeImageBufferSize, mluGetImagePixelSixe, mluComputeImagePixelSize, mluGetAudioFrameSize, mluComputeAudioFrameSize \- get or compute sizes of ML media
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+\f3#include <ML/mlu.h>\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluGetImageBufferSize(MLopenid openPathOrPipe, MLint32* size);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluComputeImageBufferSize(MLpv* params, MLint32* size);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluGetImagePixelSize(MLopenid openPathOrPipe,\f1
+\f3                     MLint32* numerator, MLint32* denominator);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluComputeImagePixelSize(MLpv* params,\f1
+\f3                         MLint32* numerator, MLint32* denominator);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluGetAudioFrameSize(MLopenid openPathOrPipe, MLint32* size);\f1
+.sp .8v
+\f3MLstatus\f1
+\f3mluComputeAudioFrameSize(MLpv* params, MLint32* size);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2openPathOrPipe\fP
+An open device handle.
+.TP
+\f2params\fP
+A list of parameters describing the image or audio data.
+.TP
+\f2size\fP
+The computed size.
+.TP
+\f2numerator\fP
+The numerator of the computed size fraction.
+.TP
+\f2denominator\fP
+The denominator of the computed size fraction.
+
+.SH DESCRIPTION
+
+Use mluGetImageBufferSize to obtain the worst-case size of a memory
+buffer required to store an image defined by the controls of open path
+or pipe.
+
+Use mluComputeImageBufferSize to compute the worst-case size of a
+memory buffer required to store an image defined by the
+\f2params\fP.
+The \f2params\fP list must contain the parameter:
+.sp .8v
+        ML_IMAGE_CODING_INT32
+.sp .8v
+If that is set to an uncompressed coding, then the list must
+contain:
+.sp .8v
+        ML_IMAGE_HEIGHT_INT32 (or ML_IMAGE_HEIGHT_1_INT32)
+        ML_IMAGE_HEIGHT_2_INT32
+        ML_IMAGE_WIDTH_INT32,
+        ML_IMAGE_PACKING_INT32,
+        ML_IMAGE_SAMPLING_INT32,
+        ML_IMAGE_INTERLEAVE_MODE_INT32,
+.sp .8v
+In addition, the list may optionally contain the following
+(if not included, these are assumed to have value 0):
+.sp .8v
+        ML_IMAGE_SKIP_ROWS_INT32,
+        ML_IMAGE_SKIP_PIXELS_INT32,
+        ML_IMAGE_ROW_BYTES_INT32
+.sp .8v
+If any required parameter is omitted, ML_INVALID_PARAMETER is returned
+upon exit.
+Additional parameters may be included, and will be ignored.
+
+Use mluGetImagePixelSize to obtain the number of bytes required to
+store a pixel as defined by the current control settings on the open
+path or pipe.
+Note that the number of bytes per pixel is returned as
+a fractional number (\f2numerator\f1/\f2denominator\f1) in units of
+bytes/pixel.
+A single scanline of pixels should be an exact mutiple of
+\f3numerator\f1 bytes in length and is an exact mutiple of
+\f2denominator\f1 pixels in length.
+Notice that \f2denominator\f1
+need not be one, and that the ratio \f2numerator\f1/\f2denominator\f1
+need not be expressed in reduced form (i\.e\.
+may have common factors.)
+This function will fail (returning ML_STATUS_INVALID_VALUE) if the
+image coding is not uncompressed.
+
+Use mluComputeImagePixelSize compute the number of bytes required
+to store a pixel defined by the \f2params\fP.
+The
+function expects \f2params\fP to contain values for the following
+image parameters:
+
+        ML_IMAGE_PACKING_INT32,
+        ML_IMAGE_SAMPLING_INT32.
+
+The MLpv list must consist of all the parameters.
+If any parameter is omitted,
+ML_INVALID_PARAMETER is returned upon exit.
+Additional parameters may be included, and will be ignored.
+
+Use mluGetAudioFrameSize to obtain the worst-case size of a single
+frame of audio data.
+(You could multiply this by the number of
+frames per buffer to obtain the total buffer size).
+
+Use mluComputeAudioFrameSize to compute the worst-case size of a
+single frame of audio data.
+The function expects \f2params\fP to
+contain values for the following audio parameters:
+
+        ML_AUDIO_FORMAT_INT32,
+        ML_AUDIO_CHANNELS_INT32.
+
+The MLpv list must consist of all the parameters.
+If any parameter is omitted,
+ML_INVALID_PARAMETER is returned upon exit.
+Additional parameters may be included, and will be ignored.
+
+.SH EXAMPLE
+
+The example demonstrates use of mluComputeImageBufferSize function.
+.PP
+.nf
+.ft 4
+
+MLint32 buffSize;
+MLpv pv[12];
+
+pv[0].param = ML_IMAGE_CODING_INT32;
+pv[0].param = ML_CODING_UNCOMPRESSED;
+pv[1].param = ML_IMAGE_COLORSPACE_INT32;
+pv[1].value.int32 = a_colorspace[c];
+pv[2].param = ML_IMAGE_PACKING_INT32;
+pv[2].value.int32 = a_packing[p];
+pv[3].param = ML_IMAGE_SAMPLING_INT32;
+pv[3].value.int32 = a_sampling[s];
+pv[4].param = ML_IMAGE_WIDTH_INT32;
+pv[4].value.int32 = width;
+pv[5].param = ML_IMAGE_HEIGHT_1_INT32;
+pv[5].value.int32 = height_f1;
+pv[6].param = ML_IMAGE_HEIGHT_2_INT32;
+pv[6].value.int32 = height_f2;
+pv[7].param = ML_IMAGE_INTERLEAVE_MODE_INT32;
+pv[7].value.int32 = ML_INTERLEAVE_MODE_INTERLEAVED;
+pv[8].param = ML_IMAGE_SKIP_ROWS_INT32;
+pv[8].value.int32 = 0;
+pv[9].param = ML_IMAGE_SKIP_PIXELS_INT32;
+pv[9].value.int32 = 0;
+pv[10].param = ML_IMAGE_ROW_BYTES_INT32;
+pv[10].value.int32 = 0;
+pv[11].param = ML_END;
+
+if (mluComputeImageBufferSize(pv, &size) != ML_STATUS_NO_ERROR) {
+	fprintf(stderr, "mluComputeImageBufferSize failed\n");
+	return -1;
+}
+
+.ft 1
+.fi
+.P
+
+.SH DIAGNOSTICS
+The functions return one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The function returned the requested result.
+.TP
+ML_STATUS_INVALID_VALUE	
+One of the required parameters had an invalid value.
+.TP
+ML_STATUS_INVALID_PARAMETER
+Not enough parameters were included in MLpv list, or the device does not support one of the required controls.
+.TP
+ML_STATUS_INVALID_ID
+The openPathOrPipe handle was invalid.
+.TP
+
+.SH SEE ALSO
+mlOpen(3dm),
+mlIntro(3dm).
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+

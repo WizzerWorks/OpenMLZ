@@ -1,0 +1,78 @@
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#***************************************************************************
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#***************************************************************************
+#
+# ismcommondefs - Common build definitions and macros for inclusion
+#	in the ISM top level Makefile. This file automatically includes
+#	commondefs.
+#
+# See the man page sgibuild(7) for information on the use of this file
+# and its role in the SGI build environment.
+#
+#***************************************************************************
+
+ifndef _ISMCOMMONDEFS_INCLUDED_
+_ISMCOMMONDEFS_INCLUDED_ = 1
+
+ifneq ($(PLATFORM),win32)
+dummy := $(error Wrong platform)
+endif
+
+#
+# Bring in the common macros and the distribution specific macros.
+#
+ifdef BOOT_ROOT
+include $(BOOT_ROOT)/commondefs
+else
+include $(ROOT)/usr/include/make/commondefs
+endif
+
+#
+# Include $(ISMCOMMONRULES) after the first target is defined. If
+# $(BOOT_ROOT) is defined we are building the ISM that contains
+# the rules so we use that as the path to the rules file.
+#
+ifdef BOOT_ROOT
+ISMCOMMONRULES	= $(BOOT_ROOT)/ismcommonrules
+else
+ISMCOMMONRULES  = $(ROOT)/usr/include/make/ismcommonrules
+endif
+
+endif

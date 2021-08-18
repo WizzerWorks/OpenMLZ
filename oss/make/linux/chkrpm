@@ -1,0 +1,173 @@
+#! /usr/bin/perl -w
+#***************************************************************************
+# License Applicability. Except to the extent portions of this file are
+# made subject to an alternative license as permitted in the SGI Free 
+# Software License C, Version 1.0 (the "License"), the contents of this 
+# file are subject only to the provisions of the License. You may not use 
+# this file except in compliance with the License. You may obtain a copy 
+# of the License at Silicon Graphics, Inc., attn: Legal Services, 
+# 1500 Crittenden Lane, Mountain View, CA 94043, or at: 
+#   
+# http://oss.sgi.com/projects/FreeC 
+#
+# Note that, as provided in the License, the Software is distributed 
+# on an "AS IS" basis, with ALL EXPRESS AND IMPLIED WARRANTIES AND 
+# CONDITIONS DISCLAIMED, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED 
+# WARRANTIES AND CONDITIONS OF MERCHANTABILITY, SATISFACTORY QUALITY, 
+# FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. 
+# 
+# Original Code. The Original Code is: OpenML ML Library, 1.1, 12/13/2001,
+# developed by Silicon Graphics, Inc. 
+# ML1.1 is Copyright (c) 2001 Silicon Graphics, Inc. 
+# Copyright in any portions created by third parties is as indicated 
+# elsewhere herein. All Rights Reserved. 
+#
+#***************************************************************************
+
+#***************************************************************************
+#
+# Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+# PLEASE NOTE THAT OPEN-SOURCING OF PARTICULAR FILES WHICH MAKE
+# CALLS TO IRIX LIBRARIES MAY NOT BE DEEMED OR CONSTRUED IN ANY 
+# WAY TO IMPLY OR CONSTITUTE ANY OPEN-SOURCING OF ANY PORTION OF IRIX!
+#
+# RESTRICTED RIGHTS LEGEND:
+# Use, duplication or disclosure by the Government is subject to restrictions
+# as set forth in subdivision (c)(1)(ii) of the Rights in Technical Data
+# and Computer Software clause at DFARS 252.227-7013, and/or in similar or
+# successor clauses in the FAR, DOD or NASA FAR Supplement.
+#
+#***************************************************************************
+#
+# chkrpm - Checks that all files in the specified install directory
+#    hierarchy are present in the specified RPM package.
+#
+#***************************************************************************
+
+use strict;
+use Getopt::Long;
+use File::Basename;
+use File::Find;
+
+my ($progname,
+    $help,
+    $rpm,
+    $installDir,
+    $missingFile,
+    $numFiles,
+    @fileList,
+    @missingList,
+    %rpmModeList,
+    $i, $j,
+   );
+
+$progname = basename($0);
+
+#
+# Process comand line arguments
+#
+$help = 0;
+
+Getopt::Long::config("no_ignore_case");
+
+GetOptions(
+	   "h|help" => \$help,
+	   ) or usage();
+
+if ($help) {
+    usage();
+}
+
+($rpm = shift) or usage();
+($installDir = shift) or usage();
+($missingFile = shift) or $missingFile = "";
+
+#
+# Verify that the RPM package and the install dir exist
+#
+#if (! -e $rpm) {
+    #printError("RPM package '$rpm' not found");
+#}
+if (! -d $installDir) {
+    printError("Installation directory '$installDir' not found");
+}
+
+#
+# Get the contents of the installation directory
+#
+$numFiles = 0;
+find(\&dirProc, $installDir);
+
+#
+# Get the contents of the RPM package
+#
+my @list;
+
+@list = `/bin/rpm -q --queryformat '[%{FILENAMES}\n%{FILEMODES}\n]' -p $rpm`;
+chop @list;
+%rpmModeList = @list;
+
+#
+# Check each file in the install directory list against
+# each RPM file.
+#
+my $retval = 0;
+
+for ($i = 0, $j = 0; $i < $numFiles; $i++) {
+    my $fname = $fileList[$i];
+
+    if (! $rpmModeList{$fname}) {
+	print "**** Error, file missing from spec: $fname\n";
+	$missingList[$j] = $fname;
+	$j++;
+	$retval = 1;
+    }
+}
+
+if ($retval == 1 && $missingFile ne "") {
+    my $missing;
+
+    print "**** Writing $missingFile with missing filenames\n";
+    open(MISSING, ">$missingFile");
+    foreach $missing (@missingList) {
+	print MISSING "$missing\n";
+    }
+    close(MISSING);
+}
+
+
+exit $retval;
+
+
+#
+# Process each file found in the install directory
+#
+sub dirProc {
+    my ($dev, $ino);
+
+    if (-f $_) {
+	if ($File::Find::name =~ /^$installDir(.*)/) {
+	    $fileList[$numFiles] = $1;
+	    $numFiles++;
+	}
+    }
+}
+
+#
+# Usage message
+#
+sub usage {
+    print STDERR "\nUsage:  $progname [-h|--help] rpm install_dir [missing_file]\n";
+    print STDERR "\n";
+    print STDERR "\t-h|--help    Display this usage message\n";
+    exit 1;
+}
+
+#
+# Error messages
+#
+sub printError {
+    print STDERR "$progname: $_[0]\n";
+    usage();
+}

@@ -1,0 +1,34 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlStatusName 3dm
+.SH NAME
+mlStatusName \- convert a ML status value to a text name
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml.h>\f1
+.sp .8v
+\f3const char* mlStatusName(MLstatus status);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2status\f1
+the return code from a ML function.
+
+.SH DESCRIPTION
+
+Intended mainly as an aid in debugging, this call converts
+the integer ML status value into a C string.
+
+The converted string is exactly the same as the status
+enum values.
+For example, the value ML_STATUS_NO_ERROR,
+is converted to the string "ML_STATUS_NO_ERROR"
+
+.SH DIAGNOSTICS
+This function returns a valid C string.
+
+.SH   
+
+.P
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

@@ -1,0 +1,317 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlSynchronization 3dm
+.SH NAME
+mlSynchronization \- media synchronization in ML
+.SH DISCUSSION
+
+This man page introduces ML support for synchronizing digital media
+streams.
+The described techniques are designed to enable accurate
+synchronization even when there are large (and possibly unpredictable)
+processing delays.
+
+We'll begin by introducing a common representation of time, and then
+look at techniques for finding when buffers passed in/out of the
+machine.
+Then we'll use that information to predict when future
+buffers will go in/out of the machine.
+Then finally, we'll look at
+some predicate parameters for instructing the device if/when to
+process particular messages.
+
+.SH UST
+
+To timestamp each media stream, we need some convenient representation
+for time.
+In ML, time is represented by the value of the
+Unadjusted System Time (UST) counter.
+That counter starts at some
+small value when the system is reset, and increases continuously
+(without any adjustment) while the system is running.
+
+Each process and/or piece of hardware may have its own view of the
+system UST counter.
+That view is an approximation to the real system
+UST counter.
+The difference between any two views is bounded for any
+implementation.
+(On most SGI platforms, this difference is so small
+as to be undetectable using software).
+
+Whenever you receive a timestamp from the ML system, it will always
+be a signed 64-bit integer with units of nanoseconds representing a
+recent view of the system UST counter.
+
+You may obtain a current view of the system UST by using the
+.B mlGetSystemUST(3dm)
+function call.
+
+.SH UST/MSC PARAMETERS
+
+Basic support for synchronization requires that the application know
+exactly when the media samples within a buffer passed through a jack.
+In ML this is achieved with the UST/MSC buffer parameters:
+.PP
+.TP 6
+ML_AUDIO_UST_INT64, ML_VIDEO_UST_INT64
+The value of this parameter is the unadjusted system time (UST) 
+for the most recently processed slot
+in the audio/video stream.
+The UST timestamp for a buffer corresponds to the point when 
+the first media sample
+in that buffer started to pass through the jack.
+For video devices, this is time at which the first field/frame in the
+buffer starts to pass through the jack (see mlVideoSync(3dm) for
+details).
+
+.TP 6
+ML_AUDIO_MSC_INT64, ML_VIDEO_MSC_INT64
+The value of this parameter is the media stream count (MSC) 
+for the most recently processed slot in
+the audio/video stream.  This starts at some small positive
+value, and increases by one for every slot in the stream
+passing through the jack.
+This is snapped at the same instant as the
+UST time described above.
+Note that for interlaced video signals, the MSC increases by one for
+every video field, and the least-significant-bit of the MSC value
+indicates that slot is either an F1 or F2 field (specifically:
+MSC%2==0 for every F1 field).  If you choose to send two fields
+interleaved into a single buffer, then the MSC value corresponds to
+the MSC of the first field to be processed from that buffer.
+
+Note also, that MSC values are undefined when a jack is not being
+used for an active transfer.  There is no correlation between
+the MSC values during one transfer and the MSC values during other
+transfers (even when they are using the same jack).
+
+.P
+For example, here we send a video buffer to an output video path 
+and request both UST and MSC stamps:
+
+.nf
+.RS .5i
+.ne 6
+MLpv message[4];
+message[0].param = ML_IMAGE_BUFFER_BYTE_POINTER;
+message[0].value.pByte = someBuffer;
+message[0].length = sizeof(someBuffer);
+message[1].param = ML_VIDEO_UST_INT64;
+message[2].param = ML_VIDEO_MSC_INT64;
+message[3].param = ML_END;
+mlSendBuffers( device, message);
+.RE
+.fi
+.P
+After the device has processed the buffer, it will enqueue a reply
+message back to the application.
+That reply will be an exact copy of
+the message we sent in, with the exception that the MSC and UST values
+will be filled in.
+(For video input, the length of the image buffer
+parameter will also be set to the number of bytes written into it).
+
+Note that AUDIO_UST and VIDEO_UST are sampled versions of the system
+UST.
+For example, VIDEO_UST is the value of the UST on the most recent
+vertical sync on a particular video path.
+Thus VIDEO_UST is discrete
+and path-dependent, while UST is effectively continuous and
+system-dependent.
+.P
+.SH UST/MSC FOR INPUT.
+
+On input you can detect if any data is missing by looking for breaks
+in the MSC sequence.
+This could happen if your application did not
+provide buffers fast enough to capture all of the signal which arrived
+at the jack.
+
+(An alternative to looking at the MSC numbers, is to turn on the
+events ML_AUDIO_SEQUENCE_LOST or ML_VIDEO_SEQUENCE_LOST.
+Those
+will fire whenever the queue from application to device underflows.)
+
+You can also use the UST/MSC pairs from two different buffers
+(UST_1,MSC_1) and (UST_2,MSC_2) to compute the actual input sample
+rate:
+
+.nf
+.RS .5i
+.ne 6
+             (MSC_2 - MSC_1)
+sampleRate = ---------------  samples/nanosecond.
+             (UST_2 - UST_1)
+.RE
+.fi
+.P
+One common technique for synchronizing different input streams is to
+start recording early, stop recording late, and then use the ust/msc
+stamps in the recorded data to find exact points for trimming your
+input data.
+
+.SH UST/MSC FOR OUTPUT
+
+On output, you can similarly detect if there are any dropped frames by
+looking for breaks in the MSC sequence.  This could happen if your
+application did not provide enough buffers fast enough to match the
+rate at which the device needed to output data.
+
+You can compute the actual output sample rate in exactly
+the same way as for an input signal:
+
+.nf
+.RS .5i
+.ne 6
+             (MSC_2 - MSC_1)
+sampleRate = ---------------  samples/nanosecond.
+             (UST_2 - UST_1)
+.RE
+.fi
+.P
+
+For some applications, you will need to figure out exactly when the
+next buffer you send to the device will actually go out the jack.
+Doing this requires two steps.
+Firstly, your application must
+maintain its own field/frame count.
+We'll call this the Application
+Sequence Count (ASC).
+The ASC may start at any value you wish and
+must increase by one for every video field or audio frame you enqueue.
+(For convenience, you may wish to associate the ASC with the buffer by
+embedding it in the same message as a userdata parameter.)
+
+Now, assume we know the (UST,MSC,ASC) for two previously-output
+buffers, then we can detect if there was any underflow by comparing
+the number of slots the application thought it had output, with the
+number of slots which the system actually output.
+
+.nf
+.RS .5i
+.ne 6
+if (ASC_2 - ASC_1) == (MSC_2 - MSC_1) then all is well.
+.RE
+.fi
+.P
+
+Assuming all is well, and that we know the current ASC, then the next
+data you enqueue may be predicted to have a system sequence count of:
+
+.nf
+.RS .5i
+.ne 6
+MSC_current = ASC_current + (MSC_2 - ASC_2)
+.RE
+.fi
+.P
+
+and may be predicted to hit the output jack at time:
+
+.nf
+.RS .5i
+.ne 6
+                      (ASC_current - ASC_2)
+UST_current = UST_2 + ---------------------  nanoseconds
+                           sampleRate
+.RE
+.fi
+.P
+
+Note that you should periodically recompute the actual sample rate
+based on measured MSC/UST values.
+It is not sufficient to rely on a
+nominal sample rate since the actual rate may drift over time.
+
+So, in summary: given the above mechanism, we know the UST/MSC pair
+for every processed buffer.
+Using the UST/MSC's for several processed
+buffers we can compute the sample rate.
+Given a UST/MSC pair in the
+past, a prediction of the current MSC, and the sample rate, we can
+predict the UST at which the next buffer to be enqueued will hit the
+jack.  
+
+.SH PREDICATE CONTROLS
+
+Predicate controls allow us to insert conditional commands into the
+queue to the device.
+Using these we can pre-program actions, allowing
+the device to respond immediately, without needing to wait for a
+round-trip through the application.
+
+Unlike the UST/MSC timestamps, predicate controls are not required on
+all audio/video devices.
+To see if they are supported on any
+particular device look for the desired parameter in the list of
+supported parameters on each path. (see mlGetCapabilities(3dm)).
+
+One of the simplest predicate controls is:
+
+.TP 6
+ML_WAIT_FOR_AUDIO_UST_INT64, ML_WAIT_FOR_VIDEO_UST_INT64
+When the message containing this control reaches the head of the queue
+it causes the queue to stall until the specified UST value has passed.
+Then that message, and subsequent messages, are processed as normal.
+Note that the accuracy with which the system is able to implement the
+WAIT_FOR_UST command is device-dependent - see device-specific
+documentation for limitations.
+
+.P
+For example, here is code which uses WAIT_FOR_AUDIO_UST to send a
+particular buffer out after a specified time:
+
+.nf
+.RS .5i
+.ne 6
+MLpv message[3];
+message[0].param = ML_WAIT_FOR_AUDIO_UST_INT64;
+message[0].value.int64 = someUSTtimeInTheFuture;
+message[1].param = ML_AUDIO_BUFFER_POINTER;
+message[1].value.pByte = someBuffer;
+message[1].value.length = sizeof(someBuffer);
+message[2].param = ML_END;
+mlSendBuffers( someOpenPath, message);
+.RE
+.fi
+
+This places a message on the queue to the path and then immediately
+returns control to your application.
+As the device processes that
+message, it will pause until the specified video UST time has passed
+before allowing the buffer to flow through the jack.
+
+Using this technique you can program several media streams to start
+in-sync - simply choose some UST time in the future and program each
+to start at that time.
+
+.TP 6
+ML_IF_VIDEO_UST_LT
+When included in a message, this control will cause the following
+logical test: if the VIDEO_UST is less than the specified time, then
+the entire message is processed as normal.
+Otherwise, the entire
+message is simply skipped.
+
+Regardless of the outcome, any following messages are processed as
+normal.
+Skipping over a message takes time, and so there is a limit
+to how many messages a device can skip before the delay starts to
+become noticeable.
+All video devices which support this parameter must support skipping 
+at least one message without noticeable delay.
+
+.P
+.SH SEE ALSO
+mlGetCapabilities(3dm),
+mlGetControls(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm),
+mlReceiveMessage(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm),
+mlSetControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

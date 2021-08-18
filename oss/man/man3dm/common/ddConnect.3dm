@@ -1,0 +1,141 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH ddConnect 3dm
+.SH NAME
+ddConnect: ddDisconnect \- entry-points into ML device-dependent module.
+.SH SYNOPSIS
+.nf
+\f3#include <ML/ml_didd.h>\f1
+.sp .8v
+\f3MLstatus
+MLstatus ddConnect(MLbyte *ddCookie, 
+		   MLint64 staticDeviceId,
+		   MLphysicalDeviceOps *pOps,
+		   MLbyte** retddDevPriv);
+.fi
+\f3MLstatus ddDisconnect(MLbyte* ddDevPriv);\f1
+.fi
+.SH PARAMETER
+.TP 16
+\f2ddCookie\f1
+Pointer to an array of information which your module requested
+stored when it called \f3mlDINewPhysicalDevice\f1(3dm).  This
+information should be treated as read-only by your module and
+is only guaranteed to be valid for the duration of this function
+call.
+.TP
+\f2staticDeviceID\fP
+64-bit ID number representing the physical device to which
+the calling application wishes to connect.  This static id number
+is assigned by the device-independent layer.
+.TP
+\f2pOps\fP
+This should be filled in by your module to indicate device-dependent 
+functional entry points.  In addition, there is space in this 
+structure for your module to indicate the version of the ML 
+di/dd interface to which it was written.
+.TP
+\f2retddDevPriv\f1
+Pointer to your module's private process-dependent data.  Use
+this to store information you may later need while processing
+application requests.
+.P
+
+.SH DESCRIPTION
+
+These routines are a required entry-points in every device-dependent
+mlmodule. 
+
+\f3ddConnect\f1(3dm) will be called in every process that accesses 
+a physical device exposed by your device-dependent module. 
+\f3ddConnect\f1(3dm) establishes the connection between the 
+process independent description of a physical device and process 
+specific addresses for entry points and private memory structures. 
+It does this by means of the process-independent cookie that 
+your module gave when it registered each new physical device.
+
+\f3ddDisconnect\f1(3dm) is called at exit time for each process
+which called \f3ddConnect\f1(3dm).  It is a convenient place for
+you to free any memory allocated during the connect call (thereby
+eliminating a reported memory leak which debugging tools may flag).
+Note that \f3ddDisconnect\f1(3dm) is not guaranteed to be called if
+an application terminates abnormally.
+
+The \f3ddConnect\f1(3dm) routine should construct and return
+a table of function pointers to device-dependent routines for
+the specified logical device.  That table should include pointers
+for the following functions:
+
+.nf
+\f3
+        MLstatus (*ddGetCapabilities)(MLbyte* ddDevPriv,
+                                      MLint64 staticObjectId,
+                                      MLpv** capabilities);
+
+        MLstatus (*ddPvGetCapabilities)(MLbyte* ddDevPriv,
+                                        MLint64 staticObjectId,
+                                        MLint64 paramId,
+                                        MLpv** capabilities);
+
+        MLstatus (*ddOpen)(MLbyte* ddDevPriv
+                           MLint64 staticObjectId,
+                           MLopenid openObjectId
+                           MLpv*   openOptions
+                           MLbyte** retddOpenPriv);
+
+        MLstatus (*ddSetControls)(MLbyte* ddOpenPriv,
+                                  MLopenid openObjectId,
+                                  MLpv *controls);
+
+        MLstatus (*ddGetControls)(MLbyte* ddOpenPriv,
+                                  MLopenid openObjectId,
+                                  MLpv *controls);
+
+        MLstatus (*ddSendControls)(MLbyte* ddOpenPriv,
+                                   MLopenid openObjectId,
+                                   MLpv *controls);
+
+        MLstatus (*ddSendBuffers)(MLbyte* ddOpenPriv,
+                                  MLopenid openObjectId,
+                                  MLpv *buffers);
+
+        MLstatus (*ddReceiveMessage)(MLbyte* ddOpenPriv,
+                                     MLopenid openObjectId,
+                                     MLint32 *retMsgType, 
+                                     MLpv **retReply);
+
+        MLstatus (*ddXcodeWork)(MLbyte* ddOpenPriv,
+                                MLopenid openObjectId);
+
+        MLstatus (*ddClose)(MLbyte* ddOpenPriv,
+                            MLopenid openObjectId);\f1
+
+.fi
+
+.P
+.SH DIAGNOSTICS
+This function returns one of the following:
+.P
+.TP 6
+ML_STATUS_NO_ERROR
+The object was successfully opened.
+.TP
+ML_STATUS_OUT_OF_MEMORY
+There is insufficient memory to
+perform the operation
+.TP
+ML_STATUS_DEVICE_UNAVAILABLE
+The physical device is not available.  Note that
+this error should only be returned if the
+actual hardware is unavailable (for example,
+if it was unplugged).  If the device is merely
+busy, that should not preclude connecting to 
+it.
+
+.SH SEE ALSO
+mlDIIntro(3dm),
+ddInterrogate(3dm),
+mlDIQueue(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

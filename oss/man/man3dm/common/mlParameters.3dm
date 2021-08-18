@@ -1,0 +1,254 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlParameters 3dm
+.SH NAME
+mlParameters \- OpenML parameters
+.SH DISCUSSION
+.P
+This manual page describes the semantics of parameters for OpenML.
+These parameters may define control values (e.g. the frame rate or the
+width of an image) or they may describe the location of data (e.g. a
+single video field).  Applications communicate with digital media
+devices by passing arrays of param/value pairs.
+.P
+The fundamental building block of the ML is the param/value pair (MLpv):
+.Ex 13
+.sp .8v
+typedef struct {
+.br
+    MLint64 param;
+    MLvalue value;
+    MLint32 length;
+    MLint32 maxLength;
+.br
+} MLpv;
+.Ee
+.sp .8v
+The param is a unique numeric tag;  while the value is a union of several possible types, of which the most common are:
+.Ex 13
+.sp .8v
+typedef union {
+    MLint64  int64;  /* 64-bit signed integer values */
+    MLint32  int32;  /* 32-bit signed integer values */
+    MLbyte*  pByte;  /* pointer to an array of bytes */
+     [...]
+.br
+} MLvalue;
+.br
+.Ee
+.P
+In the ML, applications communicate with devices by passing lists of MLpv's.
+The last parameter in each list is ML_END.
+.P
+For example, here is a message to set the image width to be 1920 and
+height to be 1080:
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLpv controls[3];
+controls[0].param = ML_IMAGE_WIDTH_INT32;
+controls[0].value.int32 = 1920;
+controls[1].param = ML_IMAGE_HEIGHT_INT32;
+controls[1].value.int32 = 1080;
+controls[2].param = ML_END;
+.fi
+.br
+
+.SH SCALAR VALUES
+
+To set the values of scalar parameters, fill out the param and value fields of each MLpv and send the result to a device.
+It is not necessary to set the length or maxLength fields - they are ignored when setting scalars.
+The returned length will be 1 if the value is valid.
+An error status will be returned and length will be set to -1
+if the value is invalid or if the parameter is not recognized at all by the device.
+For example, to set video timing:
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLpv message[2];
+message[0].param = ML_VIDEO_TIMING_INT32;
+message[0].value.int32 = ML_TIMING_525;
+message[1].param = ML_END;
+if( mlSetControls( someOpenVideoPath, message) )
+  fprintf(stderr, "Error, unable to set timing\\n");
+.fi
+.br
+
+To get or query scalar values, you again construct a list of MLpv's,
+but here it is not necessary to set the value field.
+As the device
+processes the list, it will fill in the value and length fields.
+The
+returned length will be 1 if the value is valid.
+An error status will be returned and length will be set to -1
+if the value is invalid or if the parameter is not recognized at all by the device.
+If get or query is called before the control has been explicitly set,
+then generally the returned value is undefined (exceptions are noted
+in the definitions of the controls, see for example ML_UST.)
+.P
+For example, to get video timing:
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLpv message[2];
+message[0].param = ML_VIDEO_TIMING_INT32;
+message[1].param = ML_END;
+mlGetControls( someOpenVideoPath, message);
+if( message[0].length == 1 )
+  printf("Timing is %d\\n", message[0].value.int32);
+else
+  fprintf(stderr, "Unable to determine timing\\n");
+.fi
+.br
+.SH ARRAY VALUES
+In ML an array is much like a regular 'C' array.
+The value of the
+MLpv is a pointer to the first element of the array, the length is the
+number of valid elements in the array, and maxLength is the total
+length of the array.
+Each element increases the length of the array
+by 1, so an array of four 32-bit integers would require a maxLength of
+four.
+.P
+To set the value of an array parameter, fill out the param, value,
+maxLength and length fields.
+The returned length will be unaltered if the values are valid.
+An error status will be returned and length will be set to -1
+if the values are invalid or if the parameter is not recognized at all by the device.
+For example:
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLreal64 data[] = { 0, 0.2, 0.4, 0.6, 1.0};
+MLpv message[2];
+message[0].param = ML_PATH_LUT_REAL64_ARRAY;
+message[0].value.pReal64 = data;
+message[0].length = sizeof(data)/sizeof(MLreal64);
+message[1].param = ML_END;
+mlSendControls( someOpenPath, message );
+.fi
+.br
+.P
+Note that your application owns the array, you are free to modify or delete it at any time,
+except during a set or send call.
+In the above example, you are free to modify the data array at any time before calling mlSendControls,
+and regain that right as soon as mlSendControls returns.
+If you have a multi-threaded application, its your application's responsibility to ensure
+the data array is not accessed by some other thread while the SendControls call is in progress.
+.P
+To get the size of an array parameter, set maxLength to 0.
+The device will fill in maxLength to indicate the minimal array size to hold that value.
+An error status will be returned, maxLength will be set to zero,
+and length will be set to -1 if the parameter is not recognized at all by the device.
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLpv message[2];
+message[0].param = ML_PATH_LUT_REAL64_ARRAY;
+message[0].length = 0;
+message[0].maxLength = 0;
+message[1].param = ML_END;
+mlGetControls( someOpenPath, message );
+printf("Size of LUT is %d\\n", message[0].maxLength);
+.fi
+.br
+.P
+To get the value of an array parameter, create an array with
+maxLength entries to hold the result and set length to 0.
+The device
+will fill in no more than maxLength array elements and set length to
+indicate the number of valid entries.
+An error status will be returned and length will be set to -1
+if the values are invalid or if the parameter is not recognized at all by the device.
+It is an error to get an array parameter passing  maxLength less than 1.
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLint32 data[10];
+MLpv message[2];
+message[0].param = ML_PATH_LUT_INT32_ARRAY;
+message[0].value.pInt32 = data;
+message[0].length = 0;
+message[0].maxLength = 10;
+message[1].param = ML_END;
+mlGetControls( someOpenPath, message );
+if( message[0].length > 0 )
+{
+  printf("Received %d array entries\\n", message[0].length);
+  printf("The first entry is %d\\n", data[0]);
+}
+.fi
+.br
+.P
+Note that your application controls memory allocation.
+If you
+want to get the whole array, but don't know the maximum size, you
+must query for maxLength first, allocate space for the result, and then
+query for the value.
+.SH POINTER VALUES
+The distinction between array and pointer values in ML is subtle,
+but important.
+Array values are copied whenever they are passed
+to/from a device.
+Thus, your application owns the array memory and is
+nearly always free to modify or free it.
+Pointer values are not
+copied.
+Instead, only the location of the data is passed to the
+device.
+This is much more efficient, but imposes an additional
+restriction: after giving a pointer value to a device, you give up all
+rights to touch that memory until the device has finished processing
+it.
+.P
+For example, to send an image to a video path to be filled with input:
+.Ex 13
+.sp .8v
+.Ee
+.nf
+MLpv message[2];
+message[0].param = ML_IMAGE_BUFFER_BYTE_POINTER;
+message[0].value.pByte = someBuffer;
+message[0].length = 0;
+message[0].maxLength = sizeof(someBuffer);
+message[1].param = ML_END;
+if( mlSendBuffers( someOpenPath, message ) )
+  fprintf(stderr, "Error sending buffers\\n");
+.fi
+.br
+.P
+The sendBuffers call simply places the message on a queue to be
+processed by the device and then returns.
+It does not wait for the
+device to finish with the buffer.
+Thus, even after the call to
+sendBuffers, the device still owns the image buffer.
+Your application
+must not touch that memory until notified that processing is complete.
+.P
+When you send a buffer to be filled, the
+device uses maxLength to determine how much it may write, and
+will return length set to indicate the amount of the buffer it
+actually used.
+.P
+When you send a buffer for output, the device will interpret the
+length as the maximum number of bytes of valid data in the buffer.
+In this case maxLength is ignored.
+.P
+.SH SEE ALSO
+mlGetControls(3dm),
+mlOpen(3dm),
+mlPvGetCapabilities(3dm),
+mlReceiveMessage(3dm),
+mlSendBuffers(3dm),
+mlSendControls(3dm),
+mlSetControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.

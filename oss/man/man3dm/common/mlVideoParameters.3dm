@@ -1,0 +1,260 @@
+'\"! tbl|mmdoc
+'\"macro stdmacro
+.upperok
+.TH mlVideoParameters 3dm
+.SH NAME
+mlVideoParameters \- Digital Media video parameters
+.SH DISCUSSION
+.P
+This manual page covers parameters for describing the source of a video
+input path, or the destination of a video output path.
+Not all parameters may be supported on any particular video path.
+(Use mlquery from the command-line, or mlGetCapabilities
+ from within an application,
+to obtain a list of supported parameters).
+.P
+The complete processing of a video path is described by two sets of
+parameters.
+For input/output paths: video parameters describe how to interpret/generate the signal as it arrives/leaves, and image parameters describe how
+to write/read the resulting bits to/from memory.
+.P
+For information on image parameters see mlImageParameters(3dm).
+.P
+.SH VIDEO PATH CONTROL PARAMETERS
+
+The path control parameters are set immediately in a call to
+mlSetControls(3dm), queried immediately using mlGetControls(3dm), or
+sent on a path in a call to mlSendControls(3dm).
+Once set, these
+controls are persistent for at least the life of the path.
+Typically,
+an application will set several controls in a single message before
+beginning to process any buffers.
+
+.TP
+ML_VIDEO_TIMING_INT32
+Sets the timing on an input or output video path.
+Not all timings may
+be supported on all devices.
+On devices which can auto-detect, the
+timing may be read-only on input.
+(Details of supported timings may be
+obtained by calling mlPvGetCapabilites on this parameter).
+Common
+timings are:
+  ML_TIMING_525 (NTSC)
+  ML_TIMING_625 (PAL)
+  ML_TIMING_1125_1920x1080_60p
+  ML_TIMING_1125_1920x1080_5994p
+  ML_TIMING_1125_1920x1080_50p
+  ML_TIMING_1125_1920x1080_60i
+  ML_TIMING_1125_1920x1080_5994i
+  ML_TIMING_1125_1920x1080_50i
+  ML_TIMING_1125_1920x1080_30p
+  ML_TIMING_1125_1920x1080_2997p
+  ML_TIMING_1125_1920x1080_25p
+  ML_TIMING_1125_1920x1080_24p
+  ML_TIMING_1125_1920x1080_2398p
+  ML_TIMING_1250_1920x1080_50p
+  ML_TIMING_1250_1920x1080_50i
+  ML_TIMING_1125_1920x1035_60i
+  ML_TIMING_1125_1920x1035_5994i
+  ML_TIMING_750_1280x720_60p
+  ML_TIMING_750_1280x720_5994p
+  ML_TIMING_525_720x483_5994p
+.TP
+ML_VIDEO_COLORSPACE_INT32
+Sets the colorspace at the video jack.
+For input paths, this is the colorspace you expect to receive at the jack.
+For output paths, it is the colorspace you desire at the jack.
+Commonly supported values include:
+  ML_COLORSPACE_RGB_601_FULL,
+  ML_COLORSPACE_RGB_601_HEAD,
+  ML_COLORSPACE_CbYCr_601_FULL,
+  ML_COLORSPACE_CbYCr_601_HEAD,
+  ML_COLORSPACE_RGB_240M_FULL,
+  ML_COLORSPACE_RGB_240M_HEAD,
+  ML_COLORSPACE_CbYCr_240M_FULL,
+  ML_COLORSPACE_CbYCr_240M_HEAD,
+  ML_COLORSPACE_RGB_709_FULL,
+  ML_COLORSPACE_RGB_709_HEAD,
+  ML_COLORSPACE_CbYCr_709_FULL,
+  ML_COLORSPACE_CbYCr_709_HEAD.
+.TP
+ML_VIDEO_PRECISION_INT32
+Sets the precision (number of bits of resolution) in the signal at the jack.
+This is an integer.
+A precision value of 10, means a 10-bit signal.
+A value of 8 means an 8-bit signal.
+.TP
+ML_VIDEO_SAMPLING_INT32
+Specifies the video data format of the signal at the jack.
+Possible values include:
+ML_SAMPLING_4444,
+ML_SAMPLING_4224,
+ML_SAMPLING_444,
+ML_SAMPLING_422,
+.TP
+ML_VIDEO_SIGNAL_PRESENT_INT32
+Use to query the incoming signal on an input path.
+Not all devices may be able to sense timing, but those which do will support this parameter.
+Common values match those for ML_VIDEO_TIMING, with two additions:
+  ML_TIMING_NONE (there is no signal present)
+  ML_TIMING_UNKNOWN (the timing of the input signal cannot be determined)
+.TP
+ML_VIDEO_GENLOCK_SIGNAL_PRESENT_INT32
+Use to query the genlock source timing. 
+Only accepted on output paths.
+Not all devices may be able to sense timing, but those which do will support this parameter.
+Common values match those for ML_VIDEO_TIMING, with two additions:
+  ML_TIMING_NONE (there is no signal present)
+  ML_TIMING_UNKNOWN (the timing of the genlock signal cannot be determined)
+.TP
+ML_VIDEO_GENLOCK_SOURCE_TIMING_INT32
+Describes the genlock source timing.
+Only accepted on output paths.
+To obtain a list of allowable genlock sources timings, call mlPvGetCapabilities
+on this parameter.
+Each genlock source is specified as an output timing on the path and corresponds
+to the same values as available for ML_VIDEO_TIMING_INT32.
+.TP
+ML_VIDEO_GENLOCK_TYPE_INT32
+Describes the genlock signal type.
+Only accepted on output paths.
+To obtain a list of allowable sources, call mlPvGetCapabilities
+on this parameter.
+Each genlock type is specified as either a 32-bit
+resource Id or ML_VIDEO_GENLOCK_TYPE_INTERNAL.
+Call
+mlGetCapabilities for a list of all jacks on the current device, or
+mlGetCapabilities for details on any particular jack.
+
+.P
+These video path controls specify the clipping region (the region of the
+video signal to capture on input, or fill on output).
+For standard
+definition video, these numbers are in Rec601 coordinates.
+For
+interlaced signals, the two fields may have different heights.
+For
+progressive signals, only the values for field 1 are used.
+.P
+.TP 6
+ML_VIDEO_START_X_INT32
+Sets the start horizontal location on each line of the video signal.
+.TP
+ML_VIDEO_START_Y_F1_INT32
+Sets the start vertical location on odd fields of the video signal.
+For progressive signals it specifies the start of every frame.
+.TP
+ML_VIDEO_START_Y_F2_INT32
+Sets the start vertical location on even fields of the video signal.
+Ignored for progressive timing signals.
+.TP
+ML_VIDEO_WIDTH_INT32
+Sets the horizontal width of the clipping region on each line of the video signal.
+.TP
+ML_VIDEO_HEIGHT_F1_INT32
+Sets the vertical height for each odd field of the video signal.
+For progressive signals it specifies the height of every frame.
+.TP
+ML_VIDEO_HEIGHT_F2_INT32
+Sets the vertical height for each even field of the video signal.
+For progressive signals, it is always has value 0.
+
+.TP
+ML_VIDEO_OUTPUT_REPEAT_INT32
+If your application is doing output, and fails to provide buffers fast
+enough (the queue to the device underflows), then this control
+determines the device behavior.
+Allowable options are
+ML_VIDEO_REPEAT_NONE (the device does nothing, usually resulting in
+black output), ML_VIDEO_REPEAT_FIELD (the device repeats the last
+field) and ML_VIDEO_REPEAT_FRAME (the device repeats the last two fields).
+For progressive signals both those last two options are treated
+equivalently.
+Default is ML_VIDEO_REPEAT_FRAME.
+
+On input, any signal outside the clipping region is simply ignored.
+On output, the following parameters control the generated signal:
+.TP
+ML_VIDEO_FILL_Y_REAL32
+The luma value for any pixel outside the clipping region.
+This is a
+real number: a value of 0.0 is the minimal legal value (black), 1.0 is the maximum legal value.
+Default is 0.
+.TP
+ML_VIDEO_FILL_Cr_REAL32
+The Cr value for any pixel outside the clipping region.
+This is a
+real number: a value of 0.0 is the minimal legal value, 1.0 is the maximum legal value.
+Default is 0.
+.TP
+ML_VIDEO_FILL_Cb_REAL32
+The Cb value for any pixel outside the clipping region.
+This is a
+real number: a value of 0.0 is the minimal legal value, 1.0 is the maximum legal value.
+Default is 0.
+.TP
+ML_VIDEO_FILL_A_REAL32
+The alpha value for any pixel outside the clipping region.
+This is a
+real number: a value of 0.0 is the minimum (fully transparent), 1.0 is the maximum (fully opaque).
+Default is 1.0
+
+.SH VIDEO PATH BUFFER PARAMETERS
+
+These parameters may be sent to a video path along with a buffer, using the
+mlSendBuffers(3dm) call.
+They are processed with the buffer.
+
+.TP 6
+ML_VIDEO_UST_INT64
+The universal system time (UST) for the most recently processed slot
+in the video stream.
+Typically, an application will pass sendBuffers
+a message containing a ML_IMAGE_BUFFER, a ML_VIDEO_MSC and a
+ML_VIDEO_UST.
+Each message is processed as a single unit, and a reply
+is returned to your application via mlReceiveMessage(3dm).
+That
+reply will contain the completed buffer and the UST/MSC corresponding
+to the time at which the data in that buffer passes through the jack.
+Note that, due to hardware buffering on some cards, it is actually possible
+to receive a reply message slightly before the data has finished
+flowing through the jack.
+.TP
+ML_VIDEO_MSC_INT64
+The media stream count (MSC) for the most recently processed slot in
+the video stream.
+This is snapped at the same instant as the UST time
+described above.
+Note that MSC increases by one for each potential
+slot in the media stream.
+For interlaced video timings, each slot
+contains one field, for progressive timings, each slot contains one
+frame.
+.P
+.SH EXAMPLES
+
+Here is an example that sets the video timing and colorspace
+for an HDTV signal:
+.nf
+.sp .8v
+MLpv message[3];
+message[0].param = ML_VIDEO_TIMING_INT32;
+message[0].value.int32 = ML_TIMING_1125_1920x1080_5994i;
+message[1].param = ML_VIDEO_COLORSPACE_INT32;
+message[1].value.int32 = ML_COLORSPACE_CbYCr_709_HEAD;
+message[2].param = ML_END;
+mlSetControls( device, message);
+.br
+.fi
+.SH SEE ALSO
+mlquery(1),
+mlGetCapabilities(3dm),
+mlImageParameters(3dm),
+mlPvGetCapabilities(3dm),
+mlSendControls(3dm).
+.P  
+Copyright (c) 2000 Silicon Graphics, Inc.  All Rights Reserved.
